@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// APP SETINGS INFO CONSTANTS - SECTION ///
 ///
-const String APP_NAME = "Dosti Pak";
+const String APP_NAME = "Mallu Cupid";
 const Color APP_PRIMARY_COLOR = Colors.indigo;
 const Color APP_ACCENT_COLOR = Colors.indigoAccent;
 const String APP_VERSION_NAME = "v2.0.0";

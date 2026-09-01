@@ -1,0 +1,44 @@
+name: rishtpak
+description: "Mallu Cupid dating app."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  cloud_firestore: ^5.6.10
+  firebase_auth: ^5.5.0
+  firebase_core: ^3.5.0
+  firebase_messaging: ^15.2.0
+  firebase_storage: ^12.4.0
+  google_mobile_ads: ^5.4.0
+  in_app_purchase: ^3.2.0
+  onesignal_flutter: ^5.2.12
+  country_code_picker: ^3.2.0
+  geolocator: ^13.0.0
+  geocoding: ^3.0.0
+  geoflutterfire: ^3.0.1
+  place_picker: ^0.10.0
+  scoped_model: ^2.0.0
+  flutter_localizations:
+    sdk: flutter
+  flutter_svg: ^2.0.17
+  flutter_native_splash: ^2.4.6
+  flutter_launcher_icons: ^0.14.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/mallucupid_logo.png
+    - assets/images/mallucupid_app_icon.png
+    - assets/images/

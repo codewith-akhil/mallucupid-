@@ -332,7 +332,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver{
         appBar: AppBar(
           title: Row(
             children: [
-              Image.asset("assets/images/app_logo_new.jpeg", width: 40, height: 40),
+              Image.asset("assets/images/mallucupid_logo.png", width: 40, height: 40),
               SizedBox(width: 5),
               Text(APP_NAME),
             ],
