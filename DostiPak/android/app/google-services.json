@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "413780790025",
+    "project_id": "mallucupid-91706",
+    "storage_bucket": "mallucupid-91706.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:413780790025:android:e6c3d431695186eb42a1d8",
+        "android_client_info": {
+          "package_name": "com.mallucupid.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDEbJm__Xh9dvl_FhRcQtjfuInd-jvXrck"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

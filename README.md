@@ -5,30 +5,6 @@ Dating app to make connection between people and start new love story to lovers.
 This app is using Firebase to fetch data and display it on the screen.
 
 
-<div align="center">
-<img src="https://github.com/ABDULKARIMALBAIK/DostiPak/raw/main/screenshots/logo.png" width="250" height="250" alt="logoPhoto"/>
-</div>
-
-<div align="center">
-<img alt="check_commit" src="https://img.shields.io/github/checks-status/ABDULKARIMALBAIK/DostiPak/main?color=blue&label=check_commit&logo=github&style=flat-square">
-<img alt="check_repo" src="https://img.shields.io/github/checks-status/ABDULKARIMALBAIK/DostiPak/main?color=green&label=green&logo=github&style=flat-square">
-<img alt="license" src="https://img.shields.io/github/license/ABDULKARIMALBAIK/DostiPak?color=yellow&label=license&logo=github&style=flat-square">
-<img alt="repo_size" src="https://img.shields.io/github/languages/code-size/ABDULKARIMALBAIK/DostiPak?color=red&label=repo_size&logo=github&style=flat-square">
-</div>
-
-
-
-## Screenshots ##
-
-<div align="center">
-<img src="https://github.com/ABDULKARIMALBAIK/DostiPak/raw/main/screenshots/Rish1.jpg" width="30%" height="30%" alt="photo1"/>
-<img src="https://github.com/ABDULKARIMALBAIK/DostiPak/raw/main/screenshots/Rish2.jpg" width="30%" height="30%" alt="photo2"/>
-<img src="https://github.com/ABDULKARIMALBAIK/DostiPak/raw/main/screenshots/Rish3.jpg" width="30%" height="30%" alt="photo3"/>
-<img src="https://github.com/ABDULKARIMALBAIK/DostiPak/raw/main/screenshots/Rish4.jpg" width="30%" height="30%" alt="photo3"/>
-</div>
-
-
-
 ### What is this repository for? ###
 
 * Quick summary

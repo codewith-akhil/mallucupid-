@@ -18,6 +18,6 @@ Add many of features and improvments to the app :
 
 ## [1.0.0]
 
-Old version of dostiPak with all old features
+Old version of mallucupid with all old features
 
 
