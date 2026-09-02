@@ -35,6 +35,16 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Google Mobile Ads App ID.
+             CRITICAL: the GMA SDK crashes the app at startup if this
+             meta-data is missing. Google's PUBLIC TEST app id is used here
+             so the SDK stays happy while ads are disabled (ad unit ids in
+             constants.dart are empty). Replace it with YOUR real AdMob App
+             ID (ca-app-pub-XXXX~YYYY, from AdMob console -> Apps) before
+             enabling real ads. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

@@ -34,8 +34,8 @@ android {
         // Raised from 23 to 24 for the modern plugin set
         minSdk = 24
         targetSdk = 36
-        versionCode = 2
-        versionName = "2.0.0"
+        versionCode = 3
+        versionName = "2.0.1"
     }
 
     signingConfigs {

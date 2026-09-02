@@ -36,18 +36,26 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
+    _checkForUpdate();
+  }
+
+  /// Check the remote app version (Firestore: app_info/settings) and route.
+  /// RESILIENT: if the remote check fails for ANY reason (document missing,
+  /// offline, Firestore rules, timeout) we continue the normal auth flow
+  /// instead of getting stuck on the splash screen forever.
+  void _checkForUpdate() {
     _appHelper.getAppStoreVersion().then((storeVersion) async {
-      print('storeVersion: $storeVersion');
+      debugPrint('storeVersion: $storeVersion');
 
       // Get hard coded App current version
       int appCurrentVersion = 1;
       // Check Platform
       if (Platform.isAndroid) {
-         // Get Android version number
-         appCurrentVersion = ANDROID_APP_VERSION_NUMBER;
+        // Get Android version number
+        appCurrentVersion = ANDROID_APP_VERSION_NUMBER;
       } else if (Platform.isIOS) {
-         // Get iOS version number
-         appCurrentVersion = IOS_APP_VERSION_NUMBER;
+        // Get iOS version number
+        appCurrentVersion = IOS_APP_VERSION_NUMBER;
       }
 
       /// Compare both versions
@@ -57,15 +65,24 @@ class _SplashScreenState extends State<SplashScreen> {
         debugPrint("Go to update screen");
       } else {
         /// Authenticate User Account
-        UserModel().authUserAccount(
-          context: context,
-            scaffoldkey: _scaffoldkey,
-            signInScreen: () => _nextScreen(SignInScreen()),
-            signUpScreen: () => _nextScreen(SignUpScreen()),
-            homeScreen: () => _nextScreen(HomeScreen()),
-            blockedScreen: () => _nextScreen(BlockedAccountScreen()));
+        _authenticateUser();
       }
+    }).catchError((e, s) {
+      // Update check is optional - never block the app on it.
+      debugPrint('Splash -> update check skipped, continuing: $e\n$s');
+      _authenticateUser();
     });
+  }
+
+  /// Authenticate the user account and route to the right screen.
+  void _authenticateUser() {
+    UserModel().authUserAccount(
+        context: context,
+        scaffoldkey: _scaffoldkey,
+        signInScreen: () => _nextScreen(SignInScreen()),
+        signUpScreen: () => _nextScreen(SignUpScreen()),
+        homeScreen: () => _nextScreen(HomeScreen()),
+        blockedScreen: () => _nextScreen(BlockedAccountScreen()));
   }
 
   @override

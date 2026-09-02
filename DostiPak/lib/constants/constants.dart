@@ -10,8 +10,8 @@ const String APP_NAME = "Mallu cupid";
 const Color APP_PRIMARY_COLOR = Colors.black;
 const Color APP_ACCENT_COLOR = Colors.white;
 
-const String APP_VERSION_NAME = "v2.0.0";
-const int ANDROID_APP_VERSION_NUMBER = 2; // Google Play Version Number
+const String APP_VERSION_NAME = "v2.0.1";
+const int ANDROID_APP_VERSION_NUMBER = 3; // Google Play Version Number
 const int IOS_APP_VERSION_NUMBER = 2; // App Store Version Number
 
 //

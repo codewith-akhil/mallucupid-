@@ -101,9 +101,14 @@ class AppHelper {
   Future<int> getAppStoreVersion() async {
     final DocumentSnapshot appInfo =
         await _firestore.collection(C_APP_INFO).doc('settings').get();
-    // Cast Firestore data (untyped snapshots) to a typed map
-    final Map<String, dynamic> appData =
-        appInfo.data()! as Map<String, dynamic>;
+    // Missing document (or empty data) => no remote version available,
+    // return the local version so the update screen is skipped and the
+    // caller never crashes on a null-assert.
+    final dynamic rawData = appInfo.data();
+    if (rawData == null) {
+      return ANDROID_APP_VERSION_NUMBER;
+    }
+    final Map<String, dynamic> appData = rawData as Map<String, dynamic>;
     // Update AppInfo object
     AppModel().setAppInfo(appData);
     // Check Platform
