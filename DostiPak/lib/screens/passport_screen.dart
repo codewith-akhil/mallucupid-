@@ -216,6 +216,9 @@ class _PassportScreenState extends State<PassportScreen> {
     }
 
     return ListView.separated(
+      // Keep the last result row reachable above the Android nav bar.
+      padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).padding.bottom + 12),
       itemCount: _locations.length,
       separatorBuilder: (context, index) => const Divider(height: 1),
       itemBuilder: (context, index) {

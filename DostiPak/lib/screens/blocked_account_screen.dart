@@ -7,7 +7,10 @@ class BlockedAccountScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final i18n = AppLocalizations.of(context);
     return Scaffold(
-        body: Center(
+        body: SafeArea(
+          // No AppBar here (static full screen) => SafeArea keeps the notice
+          // off the status bar / nav bar without any blind colored band.
+          child: Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -26,6 +29,7 @@ class BlockedAccountScreen extends StatelessWidget {
                   color: Theme.of(context).primaryColor, fontSize: 18),
               textAlign: TextAlign.center),
         ],
+      ),
       ),
     ));
   }

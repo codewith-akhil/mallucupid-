@@ -67,6 +67,9 @@ class NotificationsScreen extends StatelessWidget {
             } else {
               return ListView.separated(
                 shrinkWrap: true,
+                // Keep the last notification reachable above the nav bar.
+                padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).padding.bottom + 10),
                 separatorBuilder: (context, index) => Divider(height: 10),
                 itemCount: snapshot.data!.docs.length,
                 itemBuilder: ((context, index) {

@@ -17,7 +17,10 @@ class VipDialog extends StatelessWidget {
     final i18n = AppLocalizations.of(context);
 
     return Dialog(
-      insetPadding: const EdgeInsets.symmetric(vertical: 30, horizontal: 12),
+      // Bottom inset keeps the tall scrollable dialog clear of the Android
+      // nav bar (3-button / gesture) on edge-to-edge.
+      insetPadding: EdgeInsets.fromLTRB(12, 30, 12,
+          MediaQuery.of(context).padding.bottom + 30),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10.0),
       ),

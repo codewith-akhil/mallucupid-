@@ -1,3 +1,4 @@
+import 'package:rishtpak/constants/constants.dart';
 import 'package:rishtpak/dialogs/common_dialogs.dart';
 import 'package:rishtpak/dialogs/progress_dialog.dart';
 import 'package:rishtpak/helpers/app_localizations.dart';
@@ -51,7 +52,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(15),
+        // Bottom padding keeps the last field reachable above the Android
+        // nav bar (edge-to-edge).
+        padding: EdgeInsets.fromLTRB(
+            15, 15, 15, MediaQuery.of(context).padding.bottom + 24),
         child: Form(
           key: _formKey,
           child: ScopedModelDescendant<UserModel>(
@@ -188,13 +192,31 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   /// Show progress dialog
                   _pr.show(_i18n.translate("processing"));
 
-                  /// Update profile image
-                  await UserModel().updateProfileImage(
-                      imageFile: image, oldImageUrl: imageUrl, path: 'profile');
-                  // Hide dialog
-                  _pr.hide();
-                  // close modal
-                  Navigator.of(context).pop();
+                  try {
+                    /// Update profile image (upload + Firestore update)
+                    await UserModel().updateProfileImage(
+                        imageFile: image,
+                        oldImageUrl: imageUrl,
+                        path: 'profile');
+
+                    // Hide dialog
+                    _pr.hide();
+                    // close modal
+                    Navigator.of(context).pop();
+                  }
+                  catch (e) {
+                    // Upload / Firestore failed (offline, rules):
+                    // ALWAYS stop the loading dialog and tell the user
+                    debugPrint('updateProfileImage() -> error: $e');
+                    _pr.hide();
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(this.context).showSnackBar(SnackBar(
+                      backgroundColor: APP_ERROR_COLOR,
+                      content: Text(
+                          this._i18n.translate("photo_upload_failed"),
+                          style: const TextStyle(color: Colors.white)),
+                    ));
+                  }
                 }
               },
             ));

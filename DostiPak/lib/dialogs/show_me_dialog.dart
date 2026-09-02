@@ -71,7 +71,7 @@ class _ShowMeDialogState extends State<ShowMeDialog> {
           ),
         ),
         Divider(
-          color: Colors.black,
+          color: APP_DIVIDER_COLOR,
           height: 5,
         ),
         Flexible(
@@ -97,7 +97,7 @@ class _ShowMeDialogState extends State<ShowMeDialog> {
           ),
         ),
         Divider(
-          color: Colors.black,
+          color: APP_DIVIDER_COLOR,
           height: 5,
         ),
         Builder(

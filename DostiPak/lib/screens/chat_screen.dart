@@ -380,8 +380,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _i18n = AppLocalizations.of(context);
     _pr = ProgressDialog(context);
 
-    return SafeArea(
-      child: Scaffold(
+    return Scaffold(
         appBar: AppBar(
           // Show User profile info
           title: GestureDetector(
@@ -526,7 +525,16 @@ class _ChatScreenState extends State<ChatScreen> {
 
                     /// Text Composer
                     Padding(
-                      padding: const EdgeInsets.only(left: 8 , right: 8 , top: 0 , bottom: 5),
+                      // Sits above BOTH the keyboard (resizeToAvoidBottomInset
+                      // lifts the body while viewInsets > 0) and the Android
+                      // nav bar when the keyboard is closed.
+                      padding: EdgeInsets.only(
+                          left: 8,
+                          right: 8,
+                          top: 0,
+                          bottom: MediaQuery.of(context).viewInsets.bottom > 0
+                              ? 5
+                              : MediaQuery.of(context).padding.bottom + 5),
                       child: Container(
                         height: 56,
                         child: Row(
@@ -705,7 +713,15 @@ class _ChatScreenState extends State<ChatScreen> {
               Align(
                 alignment: Alignment.bottomLeft,
                 child: Padding(
-                  padding: const EdgeInsets.all(7.5),
+                  // Nav-bar aware so the media FAB never hides behind the
+                  // gesture pill / 3-button nav.
+                  padding: EdgeInsets.fromLTRB(
+                      7.5,
+                      7.5,
+                      7.5,
+                      MediaQuery.of(context).viewInsets.bottom > 0
+                          ? 7.5
+                          : MediaQuery.of(context).padding.bottom + 7.5),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -749,7 +765,6 @@ class _ChatScreenState extends State<ChatScreen> {
             ],
           ),
         ),
-      ),
     );
 
   }
@@ -969,9 +984,10 @@ class _ChatScreenState extends State<ChatScreen> {
 
     // _pr.show(_i18n.translate("sending"));
 
+    // Per-user storage path: uploads/messages/{uid}/audio{timestamp}.m4a
     final Reference firebaseStorageRef = FirebaseStorage.instance
         .ref()
-        .child('uploads/messages/audio${DateTime.now().millisecondsSinceEpoch.toString()}}.m4a');
+        .child('uploads/messages/${UserModel().user.userId}/audio${DateTime.now().millisecondsSinceEpoch.toString()}.m4a');
 
     UploadTask task = firebaseStorageRef.putFile(File(recordFilePath));
     task.then((value) async {
@@ -991,7 +1007,15 @@ class _ChatScreenState extends State<ChatScreen> {
       // setState(() {});
 
     }).catchError((e) {
-      print(e);
+      // Upload failed (offline / rules): tell the user instead of
+      // failing silently with no message sent
+      debugPrint('uploadAudio() -> error: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        backgroundColor: APP_ERROR_COLOR,
+        content: Text(AppLocalizations.of(context).translate("media_upload_failed"),
+            style: const TextStyle(color: Colors.white)),
+      ));
     });
   }
 

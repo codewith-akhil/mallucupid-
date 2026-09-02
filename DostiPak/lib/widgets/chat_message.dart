@@ -1,6 +1,7 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:rishtpak/constants/constants.dart';
 
 class ChatMessage extends StatefulWidget {
 
@@ -305,7 +306,7 @@ class _ChatMessageState extends State<ChatMessage> {
                     widget.textMessage ?? "",
                     style: TextStyle(
                         fontSize: 18,
-                        color: widget.isUserSender ? Colors.white : Colors.black),
+                        color: widget.isUserSender ? Colors.white : APP_TEXT_COLOR),
                     textAlign: TextAlign.center,
                   ),
                 ),

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:rishtpak/constants/constants.dart';
 import 'package:rishtpak/helpers/app_helper.dart';
 import 'package:rishtpak/helpers/app_localizations.dart';
 import 'package:rishtpak/screens/about_us_screen.dart';
@@ -12,7 +13,7 @@ class AppSectionCard extends StatelessWidget {
   final AppHelper _appHelper = AppHelper();
   // Text style
   final _textStyle = TextStyle(
-    color: Colors.black,
+    color: APP_TEXT_COLOR,
     fontSize: 16.0,
     fontWeight: FontWeight.w500,
   );

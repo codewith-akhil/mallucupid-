@@ -3,11 +3,12 @@ import 'dart:math';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:rishtpak/constants/constants.dart';
 import 'package:rishtpak/dialogs/progress_dialog.dart';
+import 'package:rishtpak/models/user_model.dart';
 import 'package:rishtpak/helpers/app_localizations.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:path_provider/path_provider.dart' as path_provider;
-import 'package:rishtpak/widgets/svg_icon.dart';
 
 
 class StickerSourceSheet extends StatelessWidget {
@@ -102,6 +103,10 @@ class StickerSourceSheet extends StatelessWidget {
               /// Select stickers
               Expanded(
                 child: GridView.count(
+                  // Keep the last sticker row reachable above the Android
+                  // nav bar.
+                  padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).padding.bottom + 3),
                   mainAxisSpacing: 3,
                   crossAxisCount: 3,
                   childAspectRatio: 200/200,
@@ -123,7 +128,7 @@ class StickerSourceSheet extends StatelessWidget {
 
                           //Upload to storage
                           Navigator.of(context).pop();
-                          uploadToFirebase(stickerPath);
+                          uploadToFirebase(stickerPath, context);
 
                         },
                       ),
@@ -138,7 +143,7 @@ class StickerSourceSheet extends StatelessWidget {
         )));
   }
 
-  void uploadToFirebase(String path) async {
+  void uploadToFirebase(String path, BuildContext sheetContext) async {
 
     final byteData = await rootBundle.load(path);
     print('buffer size : ${byteData.lengthInBytes}');
@@ -162,9 +167,10 @@ class StickerSourceSheet extends StatelessWidget {
       _pr.show(_i18n.translate("sending"));
 
       // Upload to firebase storage
+      // Per-user storage path: uploads/messages/{uid}/sticker{timestamp}.{ext}
       final Reference firebaseStorageRef = FirebaseStorage.instance
           .ref()
-          .child('uploads/messages/sticker${DateTime
+          .child('uploads/messages/${UserModel().user.userId}/sticker${DateTime
           .now()
           .millisecondsSinceEpoch
           .toString()}.$extension');
@@ -182,6 +188,16 @@ class StickerSourceSheet extends StatelessWidget {
 
         // Hide processing dialog
         _pr.hide();
+      }).catchError((e) {
+        // Upload failed (offline / rules): ALWAYS hide the processing
+        // dialog and tell the user - no silent "sending..." forever
+        debugPrint('StickerSourceSheet upload -> error: $e');
+        _pr.hide();
+        ScaffoldMessenger.of(sheetContext).showSnackBar(SnackBar(
+          backgroundColor: APP_ERROR_COLOR,
+          content: Text(_i18n.translate("media_upload_failed"),
+              style: const TextStyle(color: Colors.white)),
+        ));
       });
 
 

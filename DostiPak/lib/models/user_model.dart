@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:rishtpak/datas/user.dart';
-import 'package:rishtpak/helpers/app_localizations.dart';
 import 'package:rishtpak/models/app_model.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -174,6 +173,11 @@ class UserModel extends Model {
 
 
   /// Authenticate User Account
+  ///
+  /// RESILIENT: if the Firestore [getUser] call throws (offline,
+  /// permission-denied, corrupted doc) this method no longer hangs the
+  /// caller: [onError] is invoked so screens can stop their loading state
+  /// and show a message (defaults to [signInScreen] when not provided).
   Future<void> authUserAccount({
     required BuildContext context,
     required GlobalKey<ScaffoldState> scaffoldkey,
@@ -183,12 +187,16 @@ class UserModel extends Model {
     // Optional functions called on app start
     VoidCallback? signInScreen,
     VoidCallback? blockedScreen,
+    // Called when reading the user profile from Firestore fails
+    VoidCallback? onError,
   }) async {
     /// Check user auth
     if (getFirebaseUser != null) {
 
-      /// Get current user in database
-      await getUser(getFirebaseUser!.uid).then((userDoc) {
+      try {
+        /// Get current user in database
+        final DocumentSnapshot userDoc = await getUser(getFirebaseUser!.uid);
+
         /// Check user account in database
         /// if exists check status and take action
         if (userDoc.exists) {
@@ -215,8 +223,17 @@ class UserModel extends Model {
           // Go to Sign Up Screen
           signUpScreen();
         }
-      });
-      
+      }
+      catch (e) {
+        // Firestore read failed (offline / rules / bad data):
+        // never leave the caller stuck on a loading state
+        debugPrint('authUserAccount() -> getUser failed: $e');
+        if (onError != null) {
+          onError();
+        } else if (signInScreen != null) {
+          signInScreen();
+        }
+      }
     }
     else {
       debugPrint("firebaseUser not logged in");
@@ -335,42 +352,63 @@ class UserModel extends Model {
     isLoading = true;
     notifyListeners();
 
-    // Variables
-    String country = '';
-    String locality = '';
+    // Everything below is wrapped so that [isLoading] is ALWAYS reset and
+    // [onFail] always fires - no silent hangs on the Processing() spinner
+    // (photo upload failure, Firestore failure, GPS / token issues).
+    try {
+      // Variables
+      String country = '';
+      String locality = '';
 
-      ///
-      /// Get User current location using GPS
-    final Position position = await Geolocator.getCurrentPosition();
+      /// Geolocation data (geoflutterfire compatible: geohash + geopoint).
+      /// Location is OPTIONAL for account creation: GPS can be off or the
+      /// permission not granted yet, so any failure here is non-fatal and
+      /// never allowed to hang or break sign-up.
+      Map<String, dynamic> geoPoint =
+          GeoHelper.buildGeoPointData(0.0, 0.0);
+      try {
+        /// Get User current location using GPS (15s hard limit)
+        final Position position = await Geolocator.getCurrentPosition(
+            timeLimit: Duration(seconds: 15));
 
-      /// Get User location from formatted address
-      final Placemark place =
-          await _appHelper.getUserAddress(position.latitude, position.longitude);
-      // Get User Country, City or Locality
-      country = place.country ?? '';
-      locality = place.locality != null && place.locality != '' // Check value
-          ? place.locality.toString()
-          : (place.administrativeArea ?? '');
+        /// Get User location from formatted address
+        final Placemark place = await _appHelper.getUserAddress(
+            position.latitude, position.longitude);
+        // Get User Country, City or Locality
+        country = place.country ?? '';
+        locality = place.locality != null && place.locality != '' // Check value
+            ? place.locality.toString()
+            : (place.administrativeArea ?? '');
 
-      /// Set Geolocation point
-      /// (geoflutterfire compatible data: geohash + geopoint)
-      final Map<String, dynamic> geoPoint = GeoHelper.buildGeoPointData(
-          position.latitude, position.longitude);
+        /// Set Geolocation point
+        geoPoint = GeoHelper.buildGeoPointData(
+            position.latitude, position.longitude);
+      }
+      catch (locationError) {
+        debugPrint('signUp() -> location skipped: $locationError');
+      }
 
-    /// Get user device token for push notifications
-    final userDeviceToken = await _fcm.getToken();
+      /// Get user device token for push notifications (non-fatal)
+      String? userDeviceToken;
+      try {
+        userDeviceToken = await _fcm.getToken();
+      }
+      catch (tokenError) {
+        debugPrint('signUp() -> device token skipped: $tokenError');
+      }
 
-    /// Upload user profile image
-    final String imageProfileUrl = await uploadFile(
-        file: userPhotoFile,
-        path: 'uploads/users/profiles',
-        userId: getFirebaseUser!.uid);
+      /// Upload user profile image (failure here throws -> caught below
+      /// -> loading stops + [onFail] shows the error)
+      final String imageProfileUrl = await uploadFile(
+          file: userPhotoFile,
+          path: 'uploads/users/profiles',
+          userId: getFirebaseUser!.uid);
 
-    /// Save user information in database
-    await _firestore
-        .collection(C_USERS)
-        .doc(this.getFirebaseUser!.uid)
-        .set(<String, dynamic>{
+      /// Save user information in database
+      await _firestore
+          .collection(C_USERS)
+          .doc(this.getFirebaseUser!.uid)
+          .set(<String, dynamic>{
       USER_TYPING: {
         "no_one": false
       },
@@ -405,27 +443,29 @@ class UserModel extends Model {
         USER_SHOW_ME: 'everyone', // default
         USER_MAX_DISTANCE: AppModel().appInfo.freeAccountMaxDistance, // double
       },
-    }).then((_) async {
+    });
+
       /// Get current user in database
       final DocumentSnapshot userDoc = await getUser(getFirebaseUser!.uid);
 
       /// Update UserModel for current user
       updateUserObject(userDoc.data()! as Map<String, dynamic>);
 
-      /// Update loading status
-      isLoading = false;
-      notifyListeners();
       debugPrint('signUp() -> success');
 
       /// Callback function
       onSuccess();
-    }).catchError((onError) {
+    }
+    catch (e) {
+      // ANY failure (photo upload, Firestore write, etc.):
+      // stop the loading state and report - never hang the UI
+      debugPrint('signUp() -> error: $e');
+      onFail(e.toString());
+    }
+    finally {
       isLoading = false;
       notifyListeners();
-      debugPrint('signUp() -> error');
-      // Callback function
-      onError(onError);
-    });
+    }
   }
 
   /// Update current user profile
@@ -593,12 +633,11 @@ class UserModel extends Model {
       uploadPath = 'uploads/users/gallery';
     }
 
-    /// Delete previous uploaded image if not nul
-    if (oldImageUrl != null) {
-      await FirebaseStorage.instance.refFromURL(oldImageUrl).delete();
-    }
+    /// NOTE: the new image is uploaded BEFORE the old one is deleted, so a
+    /// failure can never leave the user without a profile photo.
 
-    /// Upload new image
+    /// Upload new image (failure throws -> caller shows the error and
+    /// stops its loading indicator; old photo stays untouched)
     final imageLink = await uploadFile(
         file: imageFile, path: uploadPath, userId: this.user.userId);
 
@@ -610,6 +649,17 @@ class UserModel extends Model {
       /// Update gallery image
       await updateUserData(
           userId: user.userId, data: {'$USER_GALLERY.image_$index': imageLink});
+    }
+
+    /// Delete previous uploaded image only after the new one is live
+    if (oldImageUrl != null) {
+      try {
+        await FirebaseStorage.instance.refFromURL(oldImageUrl).delete();
+      }
+      catch (e) {
+        // Old file cleanup is cosmetic - never fail the update for it
+        debugPrint('updateProfileImage() -> old image delete skipped: $e');
+      }
     }
   }
 

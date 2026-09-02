@@ -18,7 +18,9 @@ class UpdateAppScreen extends StatelessWidget {
         title: Text(_i18n.translate('update_application')),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(25),
+        // Bottom padding keeps the store badge reachable above the nav bar.
+        padding: EdgeInsets.fromLTRB(
+            25, 25, 25, MediaQuery.of(context).padding.bottom + 25),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

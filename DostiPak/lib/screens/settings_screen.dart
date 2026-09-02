@@ -118,7 +118,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: Text(_i18n.translate("settings")),
         ),
         body: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(vertical: 20),
+          // Bottom padding keeps the last card reachable above the Android
+          // nav bar (edge-to-edge).
+          padding: EdgeInsets.only(
+              top: 20, bottom: MediaQuery.of(context).padding.bottom + 20),
           child: ScopedModelDescendant<UserModel>(
               builder: (context, child, userModel) {
             return Column(

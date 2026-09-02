@@ -43,7 +43,7 @@ class _ItsMatchDialogState extends State<ItsMatchDialog> {
   Widget build(BuildContext context) {
     final i18n = AppLocalizations.of(context);
     return Material(
-      color: Colors.black.withOpacity(.55),
+      color: Color(0x51301F2B),
       child: SingleChildScrollView(
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 50, horizontal: 25),

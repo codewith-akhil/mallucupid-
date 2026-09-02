@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rishtpak/constants/constants.dart';
 
 class ProgressDialog {
   // Paramiteres
@@ -72,7 +73,7 @@ class ProgressDialog {
                   message,
                   textAlign: TextAlign.left,
                   style: TextStyle(
-                      color: Colors.black, fontSize: 18.0, 
+                      color: APP_TEXT_COLOR, fontSize: 18.0, 
                       fontWeight: FontWeight.w600),
                 ),
               ),

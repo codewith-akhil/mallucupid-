@@ -274,9 +274,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   /// Build Like and Dislike buttons
   Widget _buildButtons(BuildContext context) {
-    return Container(
-        padding: EdgeInsets.all(10),
-        child: Row(
+    // SafeArea(top: false): this plain Container is used as
+    // Scaffold.bottomNavigationBar, which does NOT auto-inset like
+    // BottomNavigationBar does - without it the like/dislike buttons render
+    // UNDER the Android 3-button / gesture nav bar.
+    return SafeArea(
+      top: false,
+      child: Container(
+          padding: EdgeInsets.all(10),
+          child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             /// Dislike profile button
@@ -312,7 +318,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _likeUser(context);
                 }),
           ],
-        ));
+        ),
+        ),
+    );
   }
 
   /// Like user function

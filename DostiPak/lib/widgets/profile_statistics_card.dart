@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rishtpak/constants/constants.dart';
 import 'package:rishtpak/dialogs/vip_dialog.dart';
 import 'package:rishtpak/helpers/app_helper.dart';
 import 'package:rishtpak/helpers/app_localizations.dart';
@@ -12,7 +13,7 @@ import 'package:rishtpak/widgets/svg_icon.dart';
 class ProfileStatisticsCard extends StatelessWidget {
   // Text style
   final _textStyle = TextStyle(
-    color: Colors.black,
+    color: APP_TEXT_COLOR,
     fontSize: 16.0,
     fontWeight: FontWeight.w500,
   );

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:rishtpak/constants/constants.dart';
 
 // ignore: must_be_immutable
 class OtpScreen extends StatefulWidget {
@@ -28,8 +29,8 @@ class OtpScreen extends StatefulWidget {
     this.otpLength = 4,
     required this.validateOtp,
     required this.routeCallback,
-    this.themeColor = Colors.black,
-    this.titleColor = Colors.black,
+    this.themeColor = APP_TEXT_COLOR,
+    this.titleColor = APP_TEXT_COLOR,
     this.icon,
     this.keyboardBackgroundColor,
   }) : super(key: key) {
@@ -76,7 +77,14 @@ class _OtpScreenState extends State<OtpScreen>
     return new Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
-        padding: const EdgeInsets.fromLTRB(0, 50, 0, 0),
+        // Edge-to-edge Android: respect the status bar (top) and the nav bar
+        // (bottom) instead of the old fixed 50px top padding, so the custom
+        // OTP keyboard and the header never render under the system bars.
+        padding: EdgeInsets.fromLTRB(
+            0,
+            MediaQuery.of(context).padding.top + 6,
+            0,
+            MediaQuery.of(context).padding.bottom),
         height: MediaQuery.of(context).size.height,
         decoration: widget._isGradientApplied!
             ? BoxDecoration(

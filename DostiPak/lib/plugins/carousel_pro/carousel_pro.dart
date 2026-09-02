@@ -182,7 +182,7 @@ class CarouselState extends State<Carousel> {
                             : Radius.circular(8.0))
                         : null,
                     image: DecorationImage(
-                      //colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.2), BlendMode.dstATop),
+                      //colorFilter: ColorFilter.mode(Color(0x51301F2B), BlendMode.dstATop),
                       image: netImage,
                       fit: widget.boxFit,
                     ),
@@ -249,7 +249,7 @@ class CarouselState extends State<Carousel> {
                               : Radius.circular(8.0))
                           : null,
                       image: DecorationImage(
-                        //colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.2), BlendMode.dstATop),
+                        //colorFilter: ColorFilter.mode(Color(0x51301F2B), BlendMode.dstATop),
                         image: widget.defaultImage,
                         fit: widget.boxFit,
                       ),

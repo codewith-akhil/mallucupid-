@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+/// The app-wide primary button.
+/// Rose background + white label (owner rule: NEVER black buttons).
 class DefaultButton extends StatelessWidget {
   // Variables
   final Widget child;
@@ -17,16 +19,16 @@ class DefaultButton extends StatelessWidget {
       height: height ?? 45,
       child: ElevatedButton(
         child: child,
-        style: ButtonStyle(
-          backgroundColor: MaterialStateProperty.all<Color>(Theme.of(context).primaryColor),
-          textStyle: MaterialStateProperty.all<TextStyle>(
-            TextStyle(color: Colors.white)
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Theme.of(context).primaryColor,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor:
+              Theme.of(context).primaryColor.withOpacity(0.45),
+          disabledForegroundColor: Colors.white,
+          textStyle: const TextStyle(color: Colors.white),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
           ),
-          shape: MaterialStateProperty.all<OutlinedBorder>(
-            RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(28),
-            )
-          )
         ),
         onPressed: onPressed,
       ),

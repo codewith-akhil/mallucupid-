@@ -16,6 +16,9 @@ class TermsOfServiceRow extends StatelessWidget {
     final i18n = AppLocalizations.of(context);
 
     return Row(
+      // min width so the row can flow inline inside Wrap/Column layouts
+      // and wrap instead of clipping on narrow screens.
+      mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
         GestureDetector(

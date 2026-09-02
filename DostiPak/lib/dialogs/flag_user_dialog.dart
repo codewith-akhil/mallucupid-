@@ -1,3 +1,4 @@
+import 'package:rishtpak/constants/constants.dart';
 import 'package:rishtpak/dialogs/common_dialogs.dart';
 import 'package:rishtpak/dialogs/progress_dialog.dart';
 import 'package:rishtpak/helpers/app_localizations.dart';
@@ -66,7 +67,7 @@ class _FlagUserDialogState extends State<FlagUserDialog> {
           ),
         ),
         Divider(
-          color: Colors.black,
+          color: APP_DIVIDER_COLOR,
           height: 5,
         ),
         Flexible(
@@ -92,7 +93,7 @@ class _FlagUserDialogState extends State<FlagUserDialog> {
           ),
         ),
         Divider(
-          color: Colors.black,
+          color: APP_DIVIDER_COLOR,
           height: 5,
         ),
         Builder(

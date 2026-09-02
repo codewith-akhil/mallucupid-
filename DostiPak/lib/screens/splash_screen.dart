@@ -75,6 +75,9 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   /// Authenticate the user account and route to the right screen.
+  /// RESILIENT: if the Firestore profile read throws (offline, rules,
+  /// bad data) the splash NEVER hangs - show an error snackbar and route
+  /// to sign-in instead.
   void _authenticateUser() {
     UserModel().authUserAccount(
         context: context,
@@ -82,7 +85,18 @@ class _SplashScreenState extends State<SplashScreen> {
         signInScreen: () => _nextScreen(SignInScreen()),
         signUpScreen: () => _nextScreen(SignUpScreen()),
         homeScreen: () => _nextScreen(HomeScreen()),
-        blockedScreen: () => _nextScreen(BlockedAccountScreen()));
+        blockedScreen: () => _nextScreen(BlockedAccountScreen()),
+        onError: () {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            backgroundColor: APP_ERROR_COLOR,
+            content: Text(
+                AppLocalizations.of(context)
+                    .translate("no_internet_connection"),
+                style: const TextStyle(color: Colors.white)),
+          ));
+          _nextScreen(SignInScreen());
+        });
   }
 
   @override

@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:rishtpak/constants/constants.dart';
-import 'package:rishtpak/dialogs/common_dialogs.dart';
 import 'package:rishtpak/helpers/app_localizations.dart';
 import 'package:rishtpak/models/user_model.dart';
 import 'package:rishtpak/screens/home_screen.dart';
@@ -119,7 +118,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
         /// Check loading status
         if (userModel.isLoading) return Processing();
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(15),
+          // Bottom padding keeps the CTA reachable above the Android nav bar
+          // (edge-to-edge: the body draws behind the 3-button / gesture nav).
+          padding: EdgeInsets.fromLTRB(15, 15, 15,
+              MediaQuery.of(context).padding.bottom + 24),
           child: Column(
             children: <Widget>[
               Text(_i18n.translate("create_account"),
@@ -340,14 +342,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
       showScaffoldMessage(
           context: context,
           message: _i18n.translate("please_select_your_profile_photo"),
-          bgcolor: Colors.red);
+          bgcolor: APP_ERROR_COLOR);
       // validate terms
     } else if (!_agreeTerms) {
       // Show error message
       showScaffoldMessage(
           context: context,
           message: _i18n.translate("you_must_agree_to_our_privacy_policy"),
-          bgcolor: Colors.red);
+          bgcolor: APP_ERROR_COLOR);
 
       /// Validate form
     } else if (UserModel().calculateUserAge(_initialDateTime) < 18) {
@@ -356,7 +358,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           context: context,
           duration: Duration(seconds: 7),
           message: _i18n.translate("only_18_years_old_and_above_are_allowed_to_create_an_account"),
-          bgcolor: Colors.red);
+          bgcolor: APP_ERROR_COLOR);
     }
     else if (!_formKey.currentState!.validate()) {
 
@@ -366,119 +368,129 @@ class _SignUpScreenState extends State<SignUpScreen> {
           context: context,
           duration: Duration(seconds: 7),
           message: _i18n.translate("please_enter_your_email"),
-          bgcolor: Colors.red);
+          bgcolor: APP_ERROR_COLOR);
     }
     else if (!strongPassword(_passwordController.text)){
       showScaffoldMessage(
           context: context,
           duration: Duration(seconds: 7),
-          message: _i18n.translate("please_enter_your_password"),
-          bgcolor: Colors.red);
+          message: _i18n.translate("password_needs_8"),
+          bgcolor: APP_ERROR_COLOR);
     }
     else {
       /// Call all input onSaved method
       _formKey.currentState!.save();
 
-
       try {
-
         //Sign up Email And Password
-        await FirebaseAuth.instance
-            .createUserWithEmailAndPassword(email: _emailController.text, password: _passwordController.text)
-            .then((userCredential) async {
+        // (Firebase sends verification / reset emails itself -
+        //  no SMTP or external mail service is needed in the app)
+        debugPrint('sign up: creating firebase auth user...');
+        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+            email: _emailController.text.trim(),
+            password: _passwordController.text);
+        debugPrint('sign up: firebase auth user created');
 
-          print('sign up successfully');
-
-
-          /// Call sign up method
-          UserModel().signUp(
-              userWallet: 0.0,
-              userOnline: true,
-              userPhotoFile: _imageFile!,
-              userFullName: _nameController.text.trim(),
-              userGender: _selectedGender!,
-              userBirthDay: _userBirthDay,
-              userBirthMonth: _userBirthMonth,
-              userBirthYear: _userBirthYear,
-              userSchool: '',
-              userJobTitle: '',
-              userBio: _bioController.text.trim(),
-              onSuccess: () async {
-                // Show success message
-                successDialog(
-                    context,
-                    message: _i18n.translate("your_account_has_been_created_successfully"),
-                    positiveAction: () {
-                      // Execute action
-                      _goToHomeScreen();
-                    });
-              },
-              onFail: (error) {
-                // Debug error
-                debugPrint(error);
-                // Show error message
-                errorDialog(context,
-                    message: _i18n.translate("an_error_occurred_while_creating_your_account"));
-              });
-
-
-        });
+        /// Call sign up method.
+        /// signUp() guarantees isLoading is reset and [onFail] fires on ANY
+        /// failure (profile photo upload, Firestore write, GPS, token) -
+        /// no silent hangs on the Processing() spinner.
+        await UserModel().signUp(
+            userWallet: 0.0,
+            userOnline: true,
+            userPhotoFile: _imageFile!,
+            userFullName: _nameController.text.trim(),
+            userGender: _selectedGender!,
+            userBirthDay: _userBirthDay,
+            userBirthMonth: _userBirthMonth,
+            userBirthYear: _userBirthYear,
+            userSchool: '',
+            userJobTitle: '',
+            userBio: _bioController.text.trim(),
+            onSuccess: () async {
+              debugPrint('sign up: account created successfully');
+              // Show success message (themed snackbar) and go home
+              showScaffoldMessage(
+                  context: context,
+                  message: _i18n.translate(
+                      "your_account_has_been_created_successfully"),
+                  bgcolor: APP_SUCCESS_COLOR);
+              _goToHomeScreen();
+            },
+            onFail: (error) {
+              // Debug error
+              debugPrint('signUp() onFail: $error');
+              // Show error message
+              showScaffoldMessage(
+                  context: context,
+                  duration: Duration(seconds: 7),
+                  message: _i18n.translate(
+                      "an_error_occurred_while_creating_your_account"),
+                  bgcolor: APP_ERROR_COLOR);
+            });
       }
       on FirebaseAuthException catch (e) {
-        //User Not Found
-        if (e.code == 'weak-password') {
-
-          print('Weak password');
-
-          //SnackBar
-          showScaffoldMessage(
-              context: context,
-              message: _i18n.translate("weak_password"),
-              bgcolor: Colors.red);
-
-
-        }
-        //Wrong Password
-        else if (e.code == 'email-already-in-use') {
-
-          print('Email is already used');
-
-          //SnackBar
-          showScaffoldMessage(
-              context: context,
-              message: _i18n.translate("email_already_used"),
-              bgcolor: Colors.red);
-
-        }
+        debugPrint('_createAccount() -> FirebaseAuthException: ${e.code}');
+        showScaffoldMessage(
+            context: context,
+            duration: Duration(seconds: 7),
+            message: _mapSignUpError(e),
+            bgcolor: APP_ERROR_COLOR);
       }
+      catch (e) {
+        debugPrint('_createAccount() -> unexpected error: $e');
+        showScaffoldMessage(
+            context: context,
+            duration: Duration(seconds: 7),
+            message: _i18n.translate("error_generic"),
+            bgcolor: APP_ERROR_COLOR);
+      }
+    }
+  }
 
+  /// Map FirebaseAuthException codes from account creation to friendly,
+  /// human messages.
+  String _mapSignUpError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'email-already-in-use':
+        return _i18n.translate("account_exists_try_sign_in");
+      case 'weak-password':
+        return _i18n.translate("weak_password_min_six");
+      case 'invalid-email':
+        return _i18n.translate("invalid_email_address");
+      case 'too-many-requests':
+        return _i18n.translate("too_many_attempts");
+      case 'network-request-failed':
+        return _i18n.translate("no_internet_connection");
+      default:
+        return '${_i18n.translate("sign_up_failed")} (${e.code}). ${_i18n.translate("please_try_again")}';
     }
   }
 
   /// Handle Agree privacy policy
+  ///
+  /// Wrap (instead of a horizontal ScrollView) so "I agree with | Terms of
+  /// service | Privacy policy" NEVER clips - it wraps to the next line on
+  /// narrow screens instead of being cut off at the right edge.
   Widget _agreePrivacy() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: <Widget>[
-          Checkbox(
-              activeColor: Theme.of(context).primaryColor,
-              value: _agreeTerms,
-              onChanged: (value) {
-                _setAgreeTerms(value!);
-              }),
-          Row(
-            children: <Widget>[
-              GestureDetector(
-                  onTap: () => _setAgreeTerms(!_agreeTerms),
-                  child: Text(_i18n.translate("i_agree_with"),
-                      style: TextStyle(fontSize: 16))),
-              // Terms of Service and Privacy Policy
-              TermsOfServiceRow(color: Colors.black),
-            ],
-          ),
-        ],
-      ),
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 0,
+      runSpacing: 0,
+      children: <Widget>[
+        Checkbox(
+            activeColor: Theme.of(context).primaryColor,
+            value: _agreeTerms,
+            onChanged: (value) {
+              _setAgreeTerms(value!);
+            }),
+        GestureDetector(
+            onTap: () => _setAgreeTerms(!_agreeTerms),
+            child: Text(_i18n.translate("i_agree_with"),
+                style: TextStyle(fontSize: 16))),
+        // Terms of Service and Privacy Policy
+        TermsOfServiceRow(color: APP_TEXT_COLOR),
+      ],
     );
   }
 

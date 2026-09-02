@@ -38,14 +38,18 @@ class _SignInScreenState extends State<SignInScreen> {
                   begin: Alignment.bottomRight,
                   colors: [
                     Theme.of(context).primaryColor, 
-                    Colors.black.withOpacity(.4)])),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
+                    Color(0x51301F2B)])),
+          // SafeArea INSIDE the full-bleed background: logo, button and the
+          // terms row never hide under the status bar / nav bar, while the
+          // background image + gradient still draw edge-to-edge.
+          child: SafeArea(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
 
-            /// App logo
-            AppLogo(),
-            SizedBox(height: 10),
+              /// App logo
+              AppLogo(),
+              SizedBox(height: 10),
 
             /// App name
             Text(APP_NAME,
@@ -102,6 +106,7 @@ class _SignInScreenState extends State<SignInScreen> {
               TermsOfServiceRow(),
               SizedBox(height: 15),
             ],
+            ),
           ),
         ),
       ),

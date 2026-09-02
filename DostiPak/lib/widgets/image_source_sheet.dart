@@ -53,59 +53,64 @@ class ImageSourceSheet extends StatelessWidget {
             SizedBox(height: 5,),
 
 
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisSize: MainAxisSize.max,
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: <Widget>[
+            /// SafeArea(top: false) keeps the Gallery / Camera buttons above
+            /// the Android nav bar (3-button / gesture) on edge-to-edge.
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.max,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: <Widget>[
 
-                  /// Select image from gallery
-                  ElevatedButton.icon(
-                    icon: Icon(Icons.photo_size_select_actual_outlined, color: Colors.white, size: 28),
-                    label: Text(i18n.translate("gallery"), style: TextStyle(fontSize: 20 , color: Colors.white)),
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).primaryColor,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(400))
+                    /// Select image from gallery
+                    ElevatedButton.icon(
+                      icon: Icon(Icons.photo_size_select_actual_outlined, color: Colors.white, size: 28),
+                      label: Text(i18n.translate("gallery"), style: TextStyle(fontSize: 20 , color: Colors.white)),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).primaryColor,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(400))
+                      ),
+                      onPressed: () async {
+
+                        // Get image from device gallery
+                        final XFile? pickedFile = await picker.pickImage(
+                          source: ImageSource.gallery,
+                          imageQuality: 80,
+                        );
+
+                        if (pickedFile == null) return;
+                        selectedImage(context, File(pickedFile.path));
+                      },
                     ),
-                    onPressed: () async {
 
-                      // Get image from device gallery
-                      final XFile? pickedFile = await picker.pickImage(
-                        source: ImageSource.gallery,
-                        imageQuality: 80,
-                      );
+                    SizedBox(width: 25,),
 
-                      if (pickedFile == null) return;
-                      selectedImage(context, File(pickedFile.path));
-                    },
-                  ),
-
-                  SizedBox(width: 25,),
-
-                  /// Capture image from camera
-                  OutlinedButton.icon(
-                    // icon: SvgIcon("assets/icons/camera_icon.svg", width: 24, height: 24),
-                    icon: Icon(Icons.camera, color: Theme.of(context).primaryColor, size: 28),
-                    label: Text(i18n.translate("camera"), style: TextStyle(fontSize: 20 , color: Theme.of(context).primaryColor)),
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(400)),
-                      foregroundColor: Theme.of(context).primaryColor,
+                    /// Capture image from camera
+                    OutlinedButton.icon(
+                      // icon: SvgIcon("assets/icons/camera_icon.svg", width: 24, height: 24),
+                      icon: Icon(Icons.camera, color: Theme.of(context).primaryColor, size: 28),
+                      label: Text(i18n.translate("camera"), style: TextStyle(fontSize: 20 , color: Theme.of(context).primaryColor)),
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(400)),
+                        foregroundColor: Theme.of(context).primaryColor,
+                      ),
+                      onPressed: () async {
+                        // Capture image from camera
+                        final XFile? pickedFile = await picker.pickImage(
+                          source: ImageSource.camera,
+                          imageQuality: 80,
+                        );
+                        if (pickedFile == null) return;
+                        selectedImage(context, File(pickedFile.path));
+                      },
                     ),
-                    onPressed: () async {
-                      // Capture image from camera
-                      final XFile? pickedFile = await picker.pickImage(
-                        source: ImageSource.camera,
-                        imageQuality: 80,
-                      );
-                      if (pickedFile == null) return;
-                      selectedImage(context, File(pickedFile.path));
-                    },
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],

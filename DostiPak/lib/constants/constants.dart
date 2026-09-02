@@ -6,12 +6,22 @@ import 'package:flutter/material.dart';
 /// App display name - used everywhere in the app (launcher, AppBar, dialogs).
 const String APP_NAME = "Mallu cupid";
 
-/// Brand colors - Mallu cupid brand is black/white.
-const Color APP_PRIMARY_COLOR = Colors.black;
-const Color APP_ACCENT_COLOR = Colors.white;
+/// Brand colors - Mallu cupid rose identity.
+/// DESIGN RULE: pure black is BANNED in this app (buttons, surfaces, icons,
+/// text, shadows). Use the semantic palette below everywhere.
+const Color APP_PRIMARY_COLOR = Color(0xFFE91E63); // rose - all primary buttons
+const Color APP_PRIMARY_DARK_COLOR = Color(0xFFC2185B); // pressed states
+const Color APP_ACCENT_COLOR = Color(0xFFFF6B95); // soft rose accent
+const Color APP_TEXT_COLOR = Color(0xFF33303A); // charcoal plum - main text
+const Color APP_TEXT_MUTED = Color(0xFF6E6875); // secondary text / appbars
+const Color APP_TEXT_FAINT = Color(0xFF9A94A3); // hints / disabled
+const Color APP_DIVIDER_COLOR = Color(0xFFECE7EE); // hairlines / borders
+const Color APP_SHADOW_COLOR = Color(0x33512D45); // soft rose-grey shadows
+const Color APP_ERROR_COLOR = Color(0xFFE5484D);
+const Color APP_SUCCESS_COLOR = Color(0xFF2FA96E);
 
-const String APP_VERSION_NAME = "v2.0.1";
-const int ANDROID_APP_VERSION_NUMBER = 3; // Google Play Version Number
+const String APP_VERSION_NAME = "v2.0.2";
+const int ANDROID_APP_VERSION_NUMBER = 4; // Google Play Version Number
 const int IOS_APP_VERSION_NUMBER = 2; // App Store Version Number
 
 //

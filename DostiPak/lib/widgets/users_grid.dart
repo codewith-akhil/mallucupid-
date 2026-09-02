@@ -17,6 +17,12 @@ class UsersGrid extends StatelessWidget {
     return GridView.builder(
       controller: gridViewController,
       shrinkWrap: true,
+      // Keep the last row of user cards reachable above the Android nav bar.
+      // (When hosted inside HomeScreen's tabs the Scaffold already removes the
+      // bottom inset from this context => padding.bottom is 0 there, so no
+      // blind space is added on those screens.)
+      padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).padding.bottom + 8),
       itemCount: itemCount,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
