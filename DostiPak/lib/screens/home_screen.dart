@@ -18,7 +18,6 @@ import 'package:rishtpak/widgets/svg_icon.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:rishtpak/constants/constants.dart';
-import 'package:in_app_purchase/in_app_purchase.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -37,8 +36,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver{
   int _selectedIndex = 0;
   late AppLocalizations _i18n;
   late Stream<DocumentSnapshot> _userStream;
-  // in_app_purchase stream
-  late StreamSubscription<List<PurchaseDetails>> _inAppPurchaseStream;
 
   /// Tab navigation
   Widget _showCurrentNavBar() {
@@ -67,85 +64,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver{
     /// Subscribe to user updates
     _userStream.listen((userEvent) {
       // Update user
-      UserModel().updateUserObject(userEvent.data()!);
+      UserModel().updateUserObject(userEvent.data()! as Map<String, dynamic>);
     });
   }
 
   /// Check current User VIP Account status
+  /// (VIP is derived from the `user_vip_until` field - Razorpay purchases,
+  /// see lib/services/payments_service.dart)
   Future<void> _checkUserVipStatus() async {
-    // Query past subscriptions
-    InAppPurchaseConnection.instance
-        .queryPastPurchases()
-        .then((QueryPurchaseDetailsResponse pastPurchases) {
-      // Chek past purchases result
-      if (pastPurchases.pastPurchases.isNotEmpty) {
-        for (var purchase in pastPurchases.pastPurchases) {
-          /// Updae User VIP Status to true
-          UserModel().setUserVip();
-          // Set Vip Subscription Id
-          UserModel().setActiveVipId(purchase.productID);
-          // Debug
-          print('Active VIP SKU: ${purchase.productID}');
-        }
-      } else {
-        print('No Active VIP Subscription');
-      }
-    });
+    await UserModel().refreshVipStatus();
   }
-
-  /// Handle in-app purchases upates
-  void _handlePurchaseUpdates() {
-    // listen purchase updates
-    _inAppPurchaseStream = InAppPurchaseConnection
-        .instance.purchaseUpdatedStream
-        .listen((purchases) async {
-      // Loop incoming purchases
-      for (var purchase in purchases) {
-        // Control purchase status
-        switch (purchase.status) {
-          case PurchaseStatus.pending:
-            // Handle this case.
-            break;
-          case PurchaseStatus.purchased:
-
-            /// **** Deliver product to user **** ///
-            ///
-            /// Update User VIP Status to true
-            UserModel().setUserVip();
-            // Set Vip Subscription Id
-            UserModel().setActiveVipId(purchase.productID);
-
-            /// Update user verified status
-            await UserModel().updateUserData(
-                userId: UserModel().user.userId,
-                data: {USER_IS_VERIFIED: true});
-
-            // User first name
-            final String userFirstname =
-                UserModel().user.userFullname.split(' ')[0];
-
-            /// Save notification in database for user
-            _notificationsApi.onPurchaseNotification(
-              nMessage: '${_i18n.translate("hello")} $userFirstname, '
-                  '${_i18n.translate("your_vip_account_is_active")}\n '
-                  '${_i18n.translate("thanks_for_buying")}',
-            );
-
-            if (purchase.pendingCompletePurchase) {
-              /// Complete pending purchase
-              InAppPurchaseConnection.instance.completePurchase(purchase);
-              print('Success pending purchase completed!');
-            }
-            break;
-          case PurchaseStatus.error:
-            // Handle this case.
-            print('purchase error-> ${purchase.error?.message}');
-            break;
-        }
-      }
-    });
-  }
-
 
 
   Future<void> _handleNotificationClick(Map<String, dynamic>? data) async {
@@ -213,7 +141,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver{
 
     /// Init streams
     _getCurrentUserUpdates();
-    _handlePurchaseUpdates();
     _initFirebaseMessage();
 
     /// Request permission for IOS
@@ -224,11 +151,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver{
 
 
     //Online stream
-    WidgetsBinding.instance!.addObserver(this);
+    WidgetsBinding.instance.addObserver(this);
     //Change online status
     UserModel().getUser(UserModel().user.userId).then((snapshot) {
 
-      Map<String,dynamic> data =  snapshot.data()!;
+      Map<String,dynamic> data =  snapshot.data()! as Map<String, dynamic>;
 
       if(data[USER_ONLINE] != true){
 
@@ -245,7 +172,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver{
     super.dispose();
     // Close streams
     _userStream.drain();
-    _inAppPurchaseStream.cancel();
 
 
     // WidgetsBinding.instance!.removeObserver(this);
@@ -280,7 +206,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver{
       //Set online
       UserModel().getUser(UserModel().user.userId).then((snapshot) {
 
-        Map<String,dynamic> data =  snapshot.data()!;
+        Map<String,dynamic> data =  snapshot.data()! as Map<String, dynamic>;
         print('1- data from online/offline is : ${data[USER_ONLINE]}');
 
         if(data[USER_ONLINE] != true){
@@ -296,7 +222,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver{
       //Set offline
       UserModel().getUser(UserModel().user.userId).then((snapshot) {
 
-        Map<String,dynamic> data =  snapshot.data()!;
+        Map<String,dynamic> data =  snapshot.data()! as Map<String, dynamic>;
         print('2- data from online/offline is : ${data[USER_ONLINE]}');
 
         if(data[USER_ONLINE] != false){
@@ -414,7 +340,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver{
 
             /// Get total counter to alert user
             final total = snapshot.data!.docs
-                .where((doc) => doc.data()[N_READ] == false)
+                .where((doc) =>
+                    (doc.data() as Map<String, dynamic>)[N_READ] == false)
                 .toList()
                 .length;
             if (total == 0) return icon;
@@ -444,7 +371,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver{
           } else {
             /// Get total counter to alert user
             final total = snapshot.data!.docs
-                .where((doc) => doc.data()[MESSAGE_READ] == false)
+                .where((doc) =>
+                    (doc.data() as Map<String, dynamic>)[MESSAGE_READ] == false)
                 .toList()
                 .length;
             if (total == 0) return icon;

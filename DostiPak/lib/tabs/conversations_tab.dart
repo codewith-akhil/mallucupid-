@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Badge;
 import 'package:rishtpak/api/conversations_api.dart';
 import 'package:rishtpak/constants/constants.dart';
 import 'package:rishtpak/datas/user.dart';
@@ -227,7 +227,7 @@ class _ConversationItemState extends State<ConversationItem> {
               .getUser(widget.conversation[USER_ID]);
 
           /// 3.) Get user object
-          final User user = User.fromDocument(userDoc.data()!);
+          final User user = User.fromDocument(userDoc.data()! as Map<String, dynamic>);
 
           /// Hide progrees
           pr.hide();
@@ -259,10 +259,10 @@ class _ConversationItemState extends State<ConversationItem> {
       Map<String , dynamic> currentUserTypings = snapshot.data()![USER_TYPING];
 
 
-      DocumentSnapshot otherUser = await FirebaseFirestore.instance.collection(C_USERS).doc(user.userId).get();
+      final otherUser = await FirebaseFirestore.instance.collection(C_USERS).doc(user.userId).get();
 
-      Map<String , dynamic> otherUserData = otherUser.data()!;
-      Map<String , dynamic> otherUserTypings = otherUser.data()![USER_TYPING];
+      Map<String , dynamic> otherUserData = otherUser.data()! as Map<String, dynamic>;
+      Map<String , dynamic> otherUserTypings = otherUserData[USER_TYPING];
 
 
 

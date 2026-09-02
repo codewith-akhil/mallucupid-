@@ -73,7 +73,7 @@ class _ChatMessageState extends State<ChatMessage> {
     widget.playerAudio = AudioPlayer();
     if(widget.isAudio){
 
-      widget.getPlayerAudio.setUrl(widget.audioLink);
+      widget.getPlayerAudio.setSourceUrl(widget.audioLink);
 
       widget.getPlayerAudio.onDurationChanged.first.then((value){
         widget.maxValue = value;
@@ -81,13 +81,13 @@ class _ChatMessageState extends State<ChatMessage> {
       });
 
 
-      widget.getPlayerAudio.onAudioPositionChanged.listen((p) {
+      widget.getPlayerAudio.onPositionChanged.listen((p) {
         widget.audioValue = p;
         setState((){});
       });
 
 
-      widget.getPlayerAudio.onPlayerCompletion.listen((event) {
+      widget.getPlayerAudio.onPlayerComplete.listen((event) {
 
         widget.audioValue = Duration(seconds: 0);
         widget.getPlayerAudio.stop();
@@ -103,7 +103,7 @@ class _ChatMessageState extends State<ChatMessage> {
 
     if(widget.isAudio){
 
-      widget.getPlayerAudio.setUrl(widget.audioLink);
+      widget.getPlayerAudio.setSourceUrl(widget.audioLink);
 
       widget.getPlayerAudio.onDurationChanged.first.then((value){
         widget.maxValue = value;
@@ -111,13 +111,13 @@ class _ChatMessageState extends State<ChatMessage> {
       });
 
 
-      widget.getPlayerAudio.onAudioPositionChanged.listen((p) {
+      widget.getPlayerAudio.onPositionChanged.listen((p) {
         widget.audioValue = p;
         setState((){});
       });
 
 
-      widget.getPlayerAudio.onPlayerCompletion.listen((event) {
+      widget.getPlayerAudio.onPlayerComplete.listen((event) {
 
         widget.audioValue = Duration(seconds: 0);
         widget.getPlayerAudio.stop();
@@ -266,7 +266,7 @@ class _ChatMessageState extends State<ChatMessage> {
                       GestureDetector(
                           onTap: () async{
 
-                            // widget.getPlayerAudio.setUrl(widget.audioLink);
+                            // widget.getPlayerAudio.setSourceUrl(widget.audioLink);
 
                             widget.getPlayerAudio.resume();
                             widget.isPlaying = true;

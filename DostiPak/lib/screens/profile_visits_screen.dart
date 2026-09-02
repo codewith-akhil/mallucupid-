@@ -141,7 +141,7 @@ class _ProfileVisitsScreenState extends State<ProfileVisitsScreen> {
               if (!snapshot.hasData) return LoadingCard();
               /// Get user object
               final User user =
-                  User.fromDocument(snapshot.data!.data()!);
+                  User.fromDocument(snapshot.data!.data()! as Map<String, dynamic>);
               /// Show user card
               return GestureDetector(
                 child: ProfileCard(user: user, page: 'require_vip' ,  showLiking: false, isLiked: false, isDisLiked: false,),

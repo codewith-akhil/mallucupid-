@@ -215,7 +215,7 @@ class CarouselState extends State<Carousel> {
                       ? BorderRadius.all(widget.radius != null
                           ? widget.radius!
                           : Radius.circular(8.0))
-                      : null,
+                      : BorderRadius.zero,
                   child: Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(

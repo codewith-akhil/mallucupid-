@@ -146,7 +146,7 @@ class _DislikedProfilesScreenState extends State<DislikedProfilesScreen> {
                   if (!snapshot.hasData) return LoadingCard();
 
                   /// Get user object
-                  final User user = User.fromDocument(snapshot.data!.data()!);
+                  final User user = User.fromDocument(snapshot.data!.data()! as Map<String, dynamic>);
 
                   /// Show user card
                   return GestureDetector(

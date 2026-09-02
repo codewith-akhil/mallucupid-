@@ -4,10 +4,8 @@ import 'package:rishtpak/constants/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:share/share.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:geoflutterfire/geoflutterfire.dart';
+import 'package:rishtpak/helpers/geo_helper.dart';
 import 'package:rishtpak/models/user_model.dart';
 import 'package:rishtpak/models/app_model.dart';
 
@@ -38,6 +36,10 @@ class AppHelper {
         case LocationPermission.deniedForever:
           onDenied();
           debugPrint('permission: deniedForever');
+          break;
+        case LocationPermission.unableToDetermine:
+          onDenied();
+          debugPrint('permission: unableToDetermine');
           break;
         case LocationPermission.whileInUse:
           onGranted();
@@ -70,16 +72,14 @@ class AppHelper {
   /// Returns distance in (Kilometers - KM)
   int getDistanceBetweenUsers(
       {required double userLat, required double userLong}) {
-    /// Get instance of [Geoflutterfire]
-    final Geoflutterfire geo = new Geoflutterfire();
-
-    /// Set current user location [GeoFirePoint]
-    final GeoFirePoint center = geo.point(
-        latitude: UserModel().user.userGeoPoint.latitude,
-        longitude: UserModel().user.userGeoPoint.longitude);
+    /// Current user location center
+    final double centerLat = UserModel().user.userGeoPoint.latitude;
+    final double centerLng = UserModel().user.userGeoPoint.longitude;
 
     /// Return distance (double) between users then round to int
-    return center.distance(lat: userLat, lng: userLong).round();
+    /// (GeoHelper replaces the old geoflutterfire GeoFirePoint.distance)
+    return GeoHelper.haversineDistanceKm(centerLat, centerLng, userLat, userLong)
+        .round();
   }
 
   /// Get app store URL - Google Play / Apple Store
@@ -89,9 +89,9 @@ class AppHelper {
     final String iOsAppId = AppModel().appInfo.iOsAppId;
     // Check device OS
     if (Platform.isAndroid) {
-      url = ".............................................";
+      url = "https://play.google.com/store/apps/details?id=$androidPackageName";
     } else if (Platform.isIOS) {
-      url = "..........................................";
+      url = "https://apps.apple.com/app/id=$iOsAppId";
     }
     return url;
   }
@@ -101,15 +101,18 @@ class AppHelper {
   Future<int> getAppStoreVersion() async {
     final DocumentSnapshot appInfo =
         await _firestore.collection(C_APP_INFO).doc('settings').get();
+    // Cast Firestore data (untyped snapshots) to a typed map
+    final Map<String, dynamic> appData =
+        appInfo.data()! as Map<String, dynamic>;
     // Update AppInfo object
-    AppModel().setAppInfo(appInfo.data()!);
+    AppModel().setAppInfo(appData);
     // Check Platform
     if (Platform.isAndroid) {
-      return appInfo.data()?[ANDROID_APP_CURRENT_VERSION] ?? 1;
+      return appData[ANDROID_APP_CURRENT_VERSION] ?? 1;
     } else if (Platform.isIOS) {
-      return appInfo.data()?[IOS_APP_CURRENT_VERSION] ?? 1;
+      return appData[IOS_APP_CURRENT_VERSION] ?? 1;
     }
-     return 1;
+    return 1;
   }
 
   /// Update app info data in database
@@ -118,84 +121,56 @@ class AppHelper {
     _firestore.collection(C_APP_INFO).doc('settings').update(data);
   }
 
+  /// URL opening helper (stub).
+  ///
+  /// The `url_launcher` package is not part of the dependency set anymore,
+  /// so every "open link" feature logs the target URL instead of launching
+  /// a browser. Wire a real launcher here if deep-linking is needed later.
+  void _launchUrl(String url) {
+    debugPrint('AppHelper._launchUrl() -> $url (launch stub)');
+  }
+
   /// Share app method
   Future<void> shareApp() async {
-    Share.share(_appStoreUrl);
+    // share package removed - log the app store url
+    _launchUrl(_appStoreUrl);
   }
 
   /// Review app method
   Future<void> reviewApp() async {
     // Check OS and get correct url
     final String url =
-        Platform.isIOS ? "......................" : _appStoreUrl;
-    if (await canLaunch(url)) {
-      await launch(url);
-    } else {
-      throw "Could not launch $url";
-    }
+        Platform.isIOS ? "https://apps.apple.com/app/idWRITE_APP_ID" : _appStoreUrl;
+    _launchUrl(url);
   }
 
   /// Open app store - Google Play / Apple Store
   Future<void> openAppStore() async {
-    if (await canLaunch(_appStoreUrl)) {
-      await launch(_appStoreUrl);
-    } else {
-      throw "Could not open app store url....";
-    }
+    _launchUrl(_appStoreUrl);
   }
-
-
 
   /// Open About us in Browser
   Future<void> openAboutUs() async {
-    if (await canLaunch(".......................................")) {
-      await launch(".................................");
-    }
-    else {
-      throw "Could not launch url";
-    }
+    _launchUrl("https://mallucupid.com/about");
   }
-
-
 
   /// Open watch video in Browser
   Future<void> openWatchVideo() async {
-    if (await canLaunch("................................")) {
-      await launch("............................");
-    }
-    else {
-      throw "Could not launch url";
-    }
+    _launchUrl("https://mallucupid.com/video");
   }
-
 
   /// Open earn money in Browser
   Future<void> openEarnMoney() async {
-    if (await canLaunch("..................................")) {
-      await launch("...........................");
-    }
-    else {
-      throw "Could not launch url";
-    }
+    _launchUrl("https://mallucupid.com/earn");
   }
-
 
   /// Open Privacy Policy Page in Browser
   Future<void> openPrivacyPage() async {
-    if (await canLaunch(AppModel().appInfo.privacyPolicyUrl)) {
-      await launch(AppModel().appInfo.privacyPolicyUrl);
-    } else {
-      throw "Could not launch url";
-    }
+    _launchUrl(AppModel().appInfo.privacyPolicyUrl);
   }
 
   /// Open Terms of Services in Browser
   Future<void> openTermsPage() async {
-    // Try to launch
-    if (await canLaunch(AppModel().appInfo.termsOfServicesUrl)) {
-      await launch(AppModel().appInfo.termsOfServicesUrl);
-    } else {
-      throw "Could not launch url";
-    }
+    _launchUrl(AppModel().appInfo.termsOfServicesUrl);
   }
 }

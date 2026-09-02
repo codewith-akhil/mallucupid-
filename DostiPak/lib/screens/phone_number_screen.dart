@@ -406,7 +406,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
 
 
                   //SnackBar
-                  _scaffoldkey.currentState!.showSnackBar(
+                  ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         backgroundColor: Theme.of(context).primaryColor,
                         content: Text(_i18n.translate("account_is_not_exists") , style: TextStyle(color: Colors.white),),
@@ -428,7 +428,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                   _pr.hide();
 
                   //SnackBar
-                  _scaffoldkey.currentState!.showSnackBar(
+                  ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         backgroundColor: Theme.of(context).primaryColor,
                         content: Text(_i18n.translate("account_is_not_exists") , style: TextStyle(color: Colors.white),),
@@ -445,7 +445,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
         }
         else {
 
-          _scaffoldkey.currentState!.showSnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 backgroundColor: Theme.of(context).primaryColor,
                 content: Text(_i18n.translate("please_enter_your_password") , style: TextStyle(color: Colors.white),),
@@ -459,7 +459,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
         }
       }
       else{
-        _scaffoldkey.currentState!.showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               backgroundColor: Theme.of(context).primaryColor,
               content: Text(_i18n.translate("please_enter_your_email") , style: TextStyle(color: Colors.white),),
@@ -473,7 +473,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
       }
     }
     else {
-      _scaffoldkey.currentState!.showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: Theme.of(context).primaryColor,
             content: Text(_i18n.translate("please_fill_data") , style: TextStyle(color: Colors.white),),

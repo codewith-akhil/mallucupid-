@@ -2,7 +2,7 @@ name: rishtpak
 description: "Mallu Cupid dating app."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 2.0.0+2
 
 environment:
   sdk: ^3.13.2
@@ -11,34 +11,78 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
+
+  # Firebase (kept)
   cloud_firestore: ^5.6.10
   firebase_auth: ^5.5.0
   firebase_core: ^3.5.0
   firebase_messaging: ^15.2.0
   firebase_storage: ^12.4.0
-  google_mobile_ads: ^5.4.0
-  in_app_purchase: ^3.2.0
-  onesignal_flutter: ^5.2.12
+  firebase_app_check: ^0.3.2
+
+  # Ads (ad unit ids are empty in constants.dart => ads disabled)
+  google_mobile_ads: ^6.0.0
+
+  # UI / utilities (kept)
   country_code_picker: ^3.2.0
-  geolocator: ^13.0.0
-  geocoding: ^3.0.0
-  geoflutterfire: ^3.0.1
-  place_picker: ^0.10.0
   scoped_model: ^2.0.0
   flutter_localizations:
     sdk: flutter
   flutter_svg: ^2.0.17
-  flutter_native_splash: ^2.4.6
-  flutter_launcher_icons: ^0.14.4
+
+  # Payments (Razorpay Checkout replaces in_app_purchase)
+  razorpay_flutter: ^1.3.7
+
+  # Location (geoflutterfire + place_picker removed: GeoHelper + on-device geocoding instead)
+  geolocator: ^13.0.0
+  geocoding: ^3.0.0
+
+  # Media / chat
+  timeago: ^3.7.0
+  audioplayers: ^6.1.0
+  image_picker: ^1.1.2
+  permission_handler: ^11.3.1
+  path_provider: ^2.1.4
+
+  # Misc (used by notifications_api for FCM legacy HTTP calls)
+  http: ^1.2.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.6
+
+dependency_overrides:
+  # Pinned to drop the heavy transitive jni dependency (disk savings)
+  path_provider_android: 2.2.10
 
 flutter:
   uses-material-design: true
   assets:
-    - assets/images/mallucupid_logo.png
-    - assets/images/mallucupid_app_icon.png
     - assets/images/
+    - assets/lang/
+    - assets/app_logo.png
+    - assets/icons/
+    - assets/stickers/
+    - assets/gif/
+    - assets/badges/
+    - assets/audio/
+
+# flutter pub run flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  image_path: "assets/app_logo.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/app_logo.png"
+
+# flutter pub run flutter_native_splash:create
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: "assets/app_logo.png"
+  android_12:
+    color: "#FFFFFF"
+    image: "assets/app_logo.png"

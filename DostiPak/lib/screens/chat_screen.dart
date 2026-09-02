@@ -1,12 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
-import 'package:audioplayers/audio_cache.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:record_mp3/record_mp3.dart';
 import 'package:rishtpak/api/likes_api.dart';
 import 'package:rishtpak/api/matches_api.dart';
 import 'package:rishtpak/api/messages_api.dart';
@@ -27,15 +26,13 @@ import 'package:rishtpak/widgets/my_circular_progress.dart';
 import 'package:rishtpak/widgets/svg_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:timeago/timeago.dart' as timeago;
-import 'package:unicorndial/unicorndial.dart';
 
 
 class ChatScreen extends StatefulWidget {
   /// Get user object
   final User user;
-  RecordMp3 recoder = RecordMp3.instance;
 
-  ChatScreen({required this.user});
+  const ChatScreen({required this.user, super.key});
 
   @override
   _ChatScreenState createState() => _ChatScreenState();
@@ -52,6 +49,14 @@ class _ChatScreenState extends State<ChatScreen> {
   bool isRecord = false;
   String recordFilePath = '';
   bool isOnline = true;
+
+  // Expandable media buttons state
+  bool _mediaOpen = false;
+
+  // Native voice recorder (AAC-LC / .m4a) via MethodChannel.
+  // Android implementation: MainActivity.kt (MediaRecorder based)
+  static const MethodChannel _voiceRecorderChannel =
+      MethodChannel('mallucupid/voice_recorder');
 
   Timer? _typingTimer;
   //NEW
@@ -205,7 +210,7 @@ class _ChatScreenState extends State<ChatScreen> {
     /// (NEW) Update user's wallet
     UserModel().getUser(UserModel().user.userId).then((snapshot) {
 
-      Map<String,dynamic> data =  snapshot.data()!;
+      Map<String,dynamic> data =  snapshot.data()! as Map<String, dynamic>;
 
       if(UserModel().user.userGender != "affiliate"){
         //Male - Female
@@ -236,7 +241,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
               UserModel().getUser(widget.user.userId).then((snap){
 
-                Map<String,dynamic> dataAffiliate =  snap.data()!;
+                Map<String,dynamic> dataAffiliate =  snap.data()! as Map<String, dynamic>;
 
                 type == "text"
                     ?
@@ -319,7 +324,7 @@ class _ChatScreenState extends State<ChatScreen> {
         .snapshots().listen((snapshot) {
 
 
-      Map<String,dynamic> data =  snapshot.data()!;
+      Map<String,dynamic> data =  snapshot.data()! as Map<String, dynamic>;
 
       isOnline =  data[USER_ONLINE];
       print('change user online is ${isOnline}');
@@ -341,6 +346,8 @@ class _ChatScreenState extends State<ChatScreen> {
     if(_typingTimer?.isActive ?? false)
       _typingTimer?.cancel();
 
+    //Cancel an in-progress voice recording and release the native recorder
+    cancelRecord();
 
     //When user dispose the screen => change typing state to false in firebase
     if(_iAmWriting){
@@ -349,8 +356,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
       UserModel().getUser(UserModel().user.userId).then((snapshot){
 
-        Map<String , dynamic> data = snapshot.data()!;
-        Map<String , dynamic> typings = snapshot.data()![USER_TYPING];
+        Map<String , dynamic> data = snapshot.data()! as Map<String, dynamic>;
+        Map<String , dynamic> typings = data[USER_TYPING] as Map<String, dynamic>? ?? <String, dynamic>{};
 
         typings[widget.user.userId] = false;
         data[USER_TYPING] = typings;
@@ -565,8 +572,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
                                             UserModel().getUser(UserModel().user.userId).then((snapshot){
 
-                                              Map<String , dynamic> data = snapshot.data()!;
-                                              Map<String , dynamic> typings = snapshot.data()![USER_TYPING];
+                                              Map<String , dynamic> data = snapshot.data()! as Map<String, dynamic>;
+                                              Map<String , dynamic> typings = data[USER_TYPING] as Map<String, dynamic>? ?? <String, dynamic>{};
 
                                               typings[widget.user.userId] = true;
                                               data[USER_TYPING] = typings;
@@ -589,8 +596,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
                                             UserModel().getUser(UserModel().user.userId).then((snap){
 
-                                              Map<String , dynamic> data = snap.data()!;
-                                              Map<String , dynamic> typings = snap.data()![USER_TYPING];
+                                              Map<String , dynamic> data = snap.data()! as Map<String, dynamic>;
+                                              Map<String , dynamic> typings = data[USER_TYPING] as Map<String, dynamic>? ?? <String, dynamic>{};
 
                                               typings[widget.user.userId] = false;
                                               data[USER_TYPING] = typings;
@@ -699,13 +706,30 @@ class _ChatScreenState extends State<ChatScreen> {
                 alignment: Alignment.bottomLeft,
                 child: Padding(
                   padding: const EdgeInsets.all(7.5),
-                  child: UnicornDialer(
-                      backgroundColor: Colors.transparent,
-                      childPadding: 46,
-                      parentButtonBackground: Theme.of(context).primaryColor,
-                      orientation: UnicornOrientation.VERTICAL,
-                      parentButton: Icon(Icons.add , color: Theme.of(context).primaryColor,),
-                      childButtons: _mediaButtons()),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+
+                      /// Mini media buttons (expandable)
+                      if (_mediaOpen) ..._mediaButtons(),
+
+                      const SizedBox(height: 10),
+
+                      /// Toggle button
+                      FloatingActionButton(
+                        heroTag: "media_toggle",
+                        backgroundColor: Theme.of(context).primaryColor,
+                        child: Icon(
+                          _mediaOpen ? Icons.close : Icons.add,
+                          color: Colors.white,
+                        ),
+                        onPressed: () {
+                          setState(() => _mediaOpen = !_mediaOpen);
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               )
 
@@ -755,8 +779,9 @@ class _ChatScreenState extends State<ChatScreen> {
                         print('size of messages: ${messages.length}');
 
 
-                        // Get message doc map
-                        final Map<String, dynamic> msg = messages[index].data()!;
+                        // Get message doc map (untyped snapshots => cast)
+                        final Map<String, dynamic> msg =
+                            messages[index].data()! as Map<String, dynamic>;
                         print('message data TEXT: ${msg[MESSAGE_TEXT]}');
                         print('message data TYPE: ${msg[MESSAGE_TYPE]}');
                         print('message data AUDIO_LINK: ${msg[MESSAGE_AUDIO_LINK]}');
@@ -843,8 +868,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
     UserModel().getUser(UserModel().user.userId).then((snapshot){
 
-      Map<String , dynamic> data = snapshot.data()!;
-      Map<String , dynamic> typings = snapshot.data()![USER_TYPING];
+      Map<String , dynamic> data = snapshot.data()! as Map<String, dynamic>;
+      Map<String , dynamic> typings = data[USER_TYPING] as Map<String, dynamic>? ?? <String, dynamic>{};
 
       typings[widget.user.userId] = false;
       data[USER_TYPING] = typings;
@@ -874,22 +899,29 @@ class _ChatScreenState extends State<ChatScreen> {
       d.createSync(recursive: true);
     }
 
-    return sdPath + "/test_${Random().nextInt(10000000)}.mp3";
+    return sdPath + "/voice_${Random().nextInt(10000000)}.m4a";
   }
 
 
-  //Start Recording
+  //Start Recording (native MediaRecorder via MethodChannel - AAC-LC / .m4a)
   void startRecord() async {
     bool hasPermission = await checkPermission();
     if (hasPermission) {
       recordFilePath = await getFilePath();
 
-      //Change color
-      isRecord = true;
+      try {
+        //Ask the native side to start recording into [recordFilePath]
+        final String? path = await _voiceRecorderChannel
+            .invokeMethod<String>('start', recordFilePath);
 
-      widget.recoder.start(recordFilePath, (type) {
-        // setState(() {});
-      });
+        //Change color
+        if (path != null) {
+          isRecord = true;
+          if (mounted) setState(() {});
+        }
+      } on PlatformException catch (e) {
+        print('startRecord() -> error: ${e.message}');
+      }
     }
     else {}
     //setState(() {});
@@ -898,21 +930,37 @@ class _ChatScreenState extends State<ChatScreen> {
 
   //Stop Recording
   void stopRecord() async {
+    try {
+      //Native side stops and returns the recorded file path (or null)
+      final String? path = await _voiceRecorderChannel.invokeMethod<String>('stop');
 
-    bool stop = widget.recoder.stop();
-    if (stop) {
+      if (path != null) {
+        isRecord = false;
+        recordFilePath = path;
+        print('stop recording');
 
+        if (mounted) setState(() {});
+
+        await uploadAudio();
+      }
+      else {
+        isRecord = false;
+        print('stay recording');
+      }
+    } on PlatformException catch (e) {
       isRecord = false;
-      print('stop recording');
-
-      await uploadAudio();
-
-      // setState(() {});
-
+      print('stopRecord() -> error: ${e.message}');
     }
-    else {
-      print('stay recording');
-    }
+  }
+
+
+  //Cancel Recording (native side releases the recorder and deletes the file)
+  void cancelRecord() {
+    if (!isRecord) return;
+    _voiceRecorderChannel.invokeMethod('cancel').catchError((e) {
+      print('cancelRecord() -> error: $e');
+    });
+    isRecord = false;
   }
 
 
@@ -923,7 +971,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     final Reference firebaseStorageRef = FirebaseStorage.instance
         .ref()
-        .child('uploads/messages/audio${DateTime.now().millisecondsSinceEpoch.toString()}}.mp3');
+        .child('uploads/messages/audio${DateTime.now().millisecondsSinceEpoch.toString()}}.m4a');
 
     UploadTask task = firebaseStorageRef.putFile(File(recordFilePath));
     task.then((value) async {
@@ -947,80 +995,160 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  List<UnicornButton> _mediaButtons() {
+  List<Widget> _mediaButtons() {
 
-    List<UnicornButton> buttons = [
+    List<Widget> buttons = [
 
       //////////////////////////SHOW IMAGES
-      UnicornButton(
-          // hasLabel: true,
-          // labelText: "pick image",
-          currentButton: FloatingActionButton(
-            heroTag: "image",
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.red,
-            // mini: true,
-            child: Icon(Icons.camera , color: Colors.red,),
-            onPressed: () async {
+      FloatingActionButton(
+        heroTag: "image",
+        mini: true,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.red,
+        child: Icon(Icons.camera , color: Colors.red,),
+        onPressed: () async {
 
-              if(UserModel().user.userGender != "affiliate"){
-                //Only user is VIP
-                if(UserModel().user.userWallet > 0.0 && UserModel().user.userWallet >= 10.0){
+          //Close media buttons
+          setState(() => _mediaOpen = false);
 
-                  /// Send image file
-                  await _getImage();
+          if(UserModel().user.userGender != "affiliate"){
+            //Only user is VIP
+            if(UserModel().user.userWallet > 0.0 && UserModel().user.userWallet >= 10.0){
 
-                  //Deduct money 10 , check if user is affiliate (not here)
+              /// Send image file
+              await _getImage();
 
-                  /// Update scroll
-                  _scrollMessageList();
-                }
-                else {
-                  /// Show VIP dialog
-                  showDialog(context: context,
-                      builder: (context) => VipDialog());
-                }
-              }
-              else {
+              //Deduct money 10 , check if user is affiliate (not here)
 
-                /// Send image file
-                await _getImage();
+              /// Update scroll
+              _scrollMessageList();
+            }
+            else {
+              /// Show VIP dialog
+              showDialog(context: context,
+                  builder: (context) => VipDialog());
+            }
+          }
+          else {
 
-                //Deduct money 10 , check if user is affiliate (not here)
+            /// Send image file
+            await _getImage();
 
-                /// Update scroll
-                _scrollMessageList();
-              }
+            //Deduct money 10 , check if user is affiliate (not here)
+
+            /// Update scroll
+            _scrollMessageList();
+          }
 
 
-            },
-          )
+        },
       ),
 
 
       //////////////////////////SHOW Stickers
-      UnicornButton(
-        // hasLabel: true,
-        // labelText: "pick stickers",
-          currentButton: FloatingActionButton(
-            heroTag: "Stickers",
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.blue,
-            // mini: true,
-            child: Icon(Icons.style , color: Colors.blue,),
-            onPressed: () async {
+      FloatingActionButton(
+        heroTag: "Stickers",
+        mini: true,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.blue,
+        child: Icon(Icons.style , color: Colors.blue,),
+        onPressed: () async {
 
+          //Close media buttons
+          setState(() => _mediaOpen = false);
+
+          if(UserModel().user.userGender != "affiliate"){
+            //Only user is VIP
+            if(UserModel().user.userWallet > 0.0 && UserModel().user.userWallet >= 10.0){
+
+              /// Send sticker file
+              await _getStickers();
+
+              /// Update scroll
+              _scrollMessageList();
+
+            }
+            else {
+              /// Show VIP dialog
+              showDialog(context: context,
+                  builder: (context) => VipDialog());
+            }
+          }
+          else {
+
+            /// Send sticker file
+            await _getStickers();
+
+
+            /// Update scroll
+            _scrollMessageList();
+          }
+
+
+
+        },
+      ),
+
+
+      //////////////////////////SHOW GIFS
+      FloatingActionButton(
+        heroTag: "gif",
+        mini: true,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.blue,
+        child: Icon(Icons.extension , color: Colors.blue,),
+        onPressed: () async {
+
+          //Close media buttons
+          setState(() => _mediaOpen = false);
+
+          if(UserModel().user.userGender != "affiliate"){
+            //Only user is VIP
+            if(UserModel().user.userWallet > 0.0 && UserModel().user.userWallet >= 10.0){
+
+              /// Send gif file
+              await _getGifs();
+
+              /// Update scroll
+              _scrollMessageList();
+
+            }
+            else {
+              /// Show VIP dialog
+              showDialog(context: context,
+                  builder: (context) => VipDialog());
+            }
+          }
+          else {
+
+            /// Send gif file
+            await _getGifs();
+
+            /// Update scroll
+            _scrollMessageList();
+          }
+
+        },
+      ),
+
+
+      //////////////////////////SHOW VOICE MESSAGE
+      FloatingActionButton(
+        heroTag: "voice",
+        mini: true,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.green,
+        onPressed: null,
+        child: GestureDetector(
+            onLongPress: (){
 
               if(UserModel().user.userGender != "affiliate"){
+                //Start Record
                 //Only user is VIP
                 if(UserModel().user.userWallet > 0.0 && UserModel().user.userWallet >= 10.0){
 
-                  /// Send gif file
-                  await _getStickers();
-
-                  /// Update scroll
-                  _scrollMessageList();
-
+                  //Record file.m4a (native MediaRecorder)
+                  startRecord();
                 }
                 else {
                   /// Show VIP dialog
@@ -1029,142 +1157,24 @@ class _ChatScreenState extends State<ChatScreen> {
                 }
               }
               else {
-
-                /// Send sricker file
-                await _getStickers();
-
-
-                /// Update scroll
-                _scrollMessageList();
+                //Record file.m4a (native MediaRecorder)
+                startRecord();
               }
 
+            },
+            onLongPressUp: (){
 
+              //stop record
+              stopRecord();
+
+              //deduct 10 money of user (not here)
+
+              /// Update scroll
+              _scrollMessageList();
 
             },
-          )
-      ),
-
-
-      //////////////////////////SHOW GIFS
-
-      // UnicornButton(
-      //   // hasLabel: true,
-      //   // labelText: "pick gif",
-      //     currentButton: FloatingActionButton(
-      //       heroTag: "gif",
-      //       backgroundColor: Colors.white,
-      //       foregroundColor: Colors.blue,
-      //       // mini: true,
-      //       child: Icon(Icons.extension , color: Colors.blue,),
-      //       onPressed: () async {
-      //
-      //
-      //         if(UserModel().user.userGender != "affiliate"){
-      //           //Only user is VIP
-      //           if(UserModel().user.userWallet > 0.0 && UserModel().user.userWallet >= 10.0){
-      //
-      //             /// Send gif file
-      //             await  _getGifs();
-      //
-      //             //Deduct money 10 , check if user is affiliate (not here)
-      //
-      //
-      //             /// Update scroll
-      //             _scrollMessageList();
-      //
-      //           }
-      //           else {
-      //             /// Show VIP dialog
-      //             showDialog(context: context,
-      //                 builder: (context) => VipDialog());
-      //           }
-      //         }
-      //         else {
-      //
-      //           /// Send gif file
-      //           await  _getGifs();
-      //
-      //           //Deduct money 10 , check if user is affiliate (not here)
-      //
-      //
-      //           /// Update scroll
-      //           _scrollMessageList();
-      //         }
-      //
-      //
-      //
-      //       },
-      //     )
-      // ),
-
-
-      //////////////////////////SHOW VOICE MESSAGE
-      UnicornButton(
-        // hasLabel: true,
-        // labelText: "voice message",
-          currentButton: FloatingActionButton(
-            heroTag: "voice",
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.green,
-            // mini: true,
-            child: GestureDetector(
-                onLongPress: (){
-
-                  if(UserModel().user.userGender != "affiliate"){
-                    //Start Record
-                    //Only user is VIP
-                    if(UserModel().user.userWallet > 0.0 && UserModel().user.userWallet >= 10.0){
-
-                      //Run sound effect open
-                      AudioCache player = AudioCache(prefix: 'assets/audio/');
-                      player.play('open_microphone.mp3');
-
-                      //Record file.mp3
-                      startRecord();
-                    }
-                    else {
-                      /// Show VIP dialog
-                      showDialog(context: context,
-                          builder: (context) => VipDialog());
-                    }
-                  }
-                  else {
-
-                    //Run sound effect open
-                    AudioCache player = AudioCache(prefix: 'assets/audio/');
-                    player.play('open_microphone.mp3');
-
-                    //Record file.mp3
-                    startRecord();
-                  }
-
-
-
-
-                },
-                onLongPressUp: (){
-
-                  //Run sound effect Close
-                  AudioCache player = AudioCache(prefix: 'assets/audio/');
-                  player.play('close_microphone.mp3');
-
-                  //stop record
-                  stopRecord();
-
-                  //deduct 10 money of user (not here)
-
-                  /// Update scroll
-                  _scrollMessageList();
-
-
-                },
-                child: Icon(Icons.mic_none_rounded , color: isRecord ? Colors.yellowAccent : Colors.green,)
-            ),
-
-
-
-            onPressed: null,
-          )
+            child: Icon(Icons.mic_none_rounded , color: isRecord ? Colors.yellowAccent : Colors.green,)
+        ),
       ),
     ];
 
@@ -1190,11 +1200,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   //Only user is VIP
                   if(UserModel().user.userWallet > 0.0 && UserModel().user.userWallet >= 10.0){
 
-                    //Run sound effect open
-                    AudioCache player = AudioCache(prefix: 'assets/audio/');
-                    player.play('open_microphone.mp3');
-
-                    //Record file.mp3
+                    //Record file.m4a
                     startRecord();
                   }
                   else {
@@ -1205,11 +1211,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 }
                 else {
 
-                  //Run sound effect open
-                  AudioCache player = AudioCache(prefix: 'assets/audio/');
-                  player.play('open_microphone.mp3');
-
-                  //Record file.mp3
+                  //Record file.m4a
                   startRecord();
                 }
 
@@ -1219,10 +1221,6 @@ class _ChatScreenState extends State<ChatScreen> {
               },
               onLongPressEnd: (details){
                 print('called');
-
-                //Run sound effect Close
-                AudioCache player = AudioCache(prefix: 'assets/audio/');
-                player.play('close_microphone.mp3');
 
                 //stop record
                 stopRecord();
@@ -1251,11 +1249,7 @@ class _ChatScreenState extends State<ChatScreen> {
             //Only user is VIP
             if(UserModel().user.userWallet > 0.0 && UserModel().user.userWallet >= 10.0){
 
-              //Run sound effect open
-              AudioCache player = AudioCache(prefix: 'assets/audio/');
-              player.play('open_microphone.mp3');
-
-              //Record file.mp3
+              //Record file.m4a
               startRecord();
             }
             else {
@@ -1266,11 +1260,7 @@ class _ChatScreenState extends State<ChatScreen> {
           }
           else {
 
-            //Run sound effect open
-            AudioCache player = AudioCache(prefix: 'assets/audio/');
-            player.play('open_microphone.mp3');
-
-            //Record file.mp3
+            //Record file.m4a
             startRecord();
           }
 
@@ -1290,10 +1280,6 @@ class _ChatScreenState extends State<ChatScreen> {
           //       builder: (context) => VipDialog());
           // }
 
-
-          //Run sound effect Close
-          AudioCache player = AudioCache(prefix: 'assets/audio/');
-          player.play('close_microphone.mp3');
 
           //stop record
           stopRecord();

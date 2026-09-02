@@ -36,7 +36,8 @@ class AppLocalizations {
 
  // Translate method - will be called from every widget which needs a localized text
  String translate(String key) {
-   return _localizedStrings[key] ?? '';
+   // Fallback to the key itself so a missing translation never blanks the UI
+   return _localizedStrings[key] ?? key;
  }
 
 

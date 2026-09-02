@@ -1,25 +1,43 @@
 import 'package:flutter/material.dart';
 
-/// APP SETINGS INFO CONSTANTS - SECTION ///
+/// APP SETTINGS INFO CONSTANTS - SECTION ///
 ///
-const String APP_NAME = "Mallu Cupid";
-const Color APP_PRIMARY_COLOR = Colors.indigo;
-const Color APP_ACCENT_COLOR = Colors.indigoAccent;
+
+/// App display name - used everywhere in the app (launcher, AppBar, dialogs).
+const String APP_NAME = "Mallu cupid";
+
+/// Brand colors - Mallu cupid brand is black/white.
+const Color APP_PRIMARY_COLOR = Colors.black;
+const Color APP_ACCENT_COLOR = Colors.white;
+
 const String APP_VERSION_NAME = "v2.0.0";
 const int ANDROID_APP_VERSION_NUMBER = 2; // Google Play Version Number
 const int IOS_APP_VERSION_NUMBER = 2; // App Store Version Number
-// 
-// Add Google Maps - API KEY required for Passport feature
-// 
-const String ANDROID_MAPS_API_KEY = "YOUR ANDROID API KEY";
-const String IOS_MAPS_API_KEY = "YOUR IOS API KEY";
+
 //
-// GOOGLE ADMOB INTERSTITIAL IDS
+// RAZORPAY CHECKOUT (payments for Golds top-up + VIP plans)
+//
+// 'rzp_test_XXXXXXXX' is a TEST-MODE placeholder.
+// Put your LIVE key id here when going live (Razorpay Dashboard ->
+// Settings -> API Keys -> Generate Test/Live Key, format: rzp_live_xxxxxxxx).
+// Without a valid key the checkout is skipped and a message is shown.
+const String RAZORPAY_KEY_ID = 'rzp_test_XXXXXXXX';
+// Razorpay settles in INR only.
+const String RAZORPAY_CURRENCY = 'INR';
+
+//
+// GOOGLE ADMOB IDS
+// Left EMPTY on purpose => ads are DISABLED everywhere in the app
+// (banner/interstitial creation is guarded by isEmpty checks).
+// Paste your real AdMob unit ids here to re-enable ads.
 //
 // For Android Platform
-const String ANDROID_INTERSTITIAL_ID = "....................";
+const String ANDROID_INTERSTITIAL_ID = "";
 // For IOS Platform
-const String IOS_INTERSTITIAL_ID = "YOUR iOS AD ID";
+const String IOS_INTERSTITIAL_ID = "";
+// Banner ids
+const String ANDROID_BANNER_ID = "";
+const String IOS_BANNER_ID = "";
 
 /// List of Supported Locales
 /// Add your new supported Locale to the array list.
@@ -30,12 +48,12 @@ const List<Locale> SUPPORTED_LOCALES = [
   Locale('en'),
 ];
 ///
-/// END APP SETINGS - SECTION
+/// END APP SETTINGS - SECTION
 
 
-/// 
+///
 /// DATABASE COLLECTIONS FIELD - SECTION
-/// 
+///
 /// FIREBASE MESSAGING TOPIC
 const NOTIFY_USERS = "NOTIFY_USERS";
 
@@ -52,6 +70,8 @@ const String C_VISITS = "Visits";
 const String C_DISLIKES = "Dislikes";
 const String C_MESSAGES = "Messages";
 const String C_NOTIFICATIONS = "Notifications";
+// Payments audit collection (Razorpay transactions)
+const String C_PAYMENTS = "Payments";
 
 /// DATABASE FIELDS FOR AppInfo COLLECTION  ///
 ///
@@ -104,6 +124,8 @@ const String USER_DEVICE_TOKEN = "user_device_token";
 const String USER_TOTAL_LIKES = "user_total_likes";
 const String USER_TOTAL_VISITS = "user_total_visits";
 const String USER_TOTAL_DISLIKED = "user_total_disliked";
+// VIP subscription expiry (Timestamp) - set by PaymentsService
+const String USER_VIP_UNTIL = "user_vip_until";
 // User Setting map - fields
 const String USER_MIN_AGE = "user_min_age";
 const String USER_MAX_AGE = "user_max_age";
@@ -162,5 +184,3 @@ const String TIMESTAMP = "timestamp";
 
 ///Remove Ads (NEW)
 const bool REMOVE_ADS = true;
-bool isFirstTime = true;
-

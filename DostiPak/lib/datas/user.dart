@@ -34,6 +34,8 @@ class User {
   final int userTotalDisliked;
   final Map<String, dynamic>? userGallery;
   final Map<String, dynamic>? userSettings;
+  // VIP subscription expiry (null => user never bought VIP)
+  final DateTime? userVipUntil;
 
   // Constructor
   User({
@@ -57,6 +59,7 @@ class User {
     required this.userLocality,
     required this.userGeoPoint,
     required this.userSettings,
+    required this.userVipUntil,
     required this.userStatus,
     required this.userLevel,
     required this.userIsVerified,
@@ -91,6 +94,9 @@ class User {
       userLocality: doc[USER_LOCALITY] ?? '',
       userGeoPoint: doc[USER_GEO_POINT]['geopoint'],
       userSettings: doc[USER_SETTINGS],
+      userVipUntil: doc[USER_VIP_UNTIL] is Timestamp
+          ? (doc[USER_VIP_UNTIL] as Timestamp).toDate()
+          : null,
       userStatus: doc[USER_STATUS],
       userIsVerified: doc[USER_IS_VERIFIED] ?? false,
       userLevel: doc[USER_LEVEL],

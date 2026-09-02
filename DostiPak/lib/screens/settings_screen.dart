@@ -1,4 +1,5 @@
 import 'package:rishtpak/constants/constants.dart';
+import 'package:rishtpak/datas/passport_location.dart';
 import 'package:rishtpak/dialogs/show_me_dialog.dart';
 import 'package:rishtpak/dialogs/vip_dialog.dart';
 import 'package:rishtpak/helpers/app_localizations.dart';
@@ -8,7 +9,6 @@ import 'package:rishtpak/screens/passport_screen.dart';
 import 'package:rishtpak/widgets/show_scaffold_msg.dart';
 import 'package:rishtpak/widgets/svg_icon.dart';
 import 'package:flutter/material.dart';
-import 'package:place_picker/place_picker.dart';
 import 'package:scoped_model/scoped_model.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -68,16 +68,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // Go to Passport screen
   Future<void> _goToPassportScreen() async {
-    // Get picked location result
-    LocationResult? result = await Navigator.of(context).push<LocationResult?>(
-        MaterialPageRoute(builder: (context) => PassportScreen()));
-    // Handle the retur result
+    // Get picked location result (on-device geocoding)
+    PassportLocation? result = await Navigator.of(context).push<PassportLocation?>(
+        MaterialPageRoute(builder: (context) => const PassportScreen()));
+    // Handle the return result
     if (result != null) {
       // Update current your location
-      _updateUserLocation(true, locationResult: result);
+      _updateUserLocation(true, passportLocation: result);
       // Debug info
       print(
-          '_goToPassportScreen() -> result: ${result.country!.name}, ${result.city!.name}');
+          '_goToPassportScreen() -> result: ${result.country}, ${result.locality}');
     } else {
       print('_goToPassportScreen() -> result: empty');
     }
@@ -85,13 +85,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // Update User Location
   Future<void> _updateUserLocation(bool isPassport,
-      {LocationResult? locationResult}) async {
+      {PassportLocation? passportLocation}) async {
     /// Update user location: Country & City an Geo Data
 
     /// Update user data
     await UserModel().updateUserLocation(
         isPassport: isPassport,
-        locationResult: locationResult,
+        passportLocation: passportLocation,
         onSuccess: () {
           // Show success message
           showScaffoldMessage(

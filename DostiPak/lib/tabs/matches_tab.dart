@@ -25,7 +25,8 @@ class _MatchesTabState extends State<MatchesTab> {
   List<DocumentSnapshot>? _matches;
   late AppLocalizations _i18n;
 
-  late BannerAd _bannerAd;
+  // google_mobile_ads 6.x banner (null => ads disabled / not loaded)
+  BannerAd? _bannerAd;
   bool isBannerVisible = false;
 
 
@@ -38,19 +39,33 @@ class _MatchesTabState extends State<MatchesTab> {
     _matchesApi.getMatches().then((matches) {
       if (mounted) setState(() => _matches = matches);
     });
-    
-    //Google Banner Ads
-    _bannerAd = BannerAd(
-      adUnitId: '.................................',  //BannerAd.testAdUnitId
-      size: AdSize.banner,  //AdSize(width:  2000, height: 65)
-      request: AdRequest(),
-      listener: AdListener(
-        onAdLoaded: (Ad ad) async{
 
+    //Google Banner Ads
+    // (created only when the banner ad unit id is configured -
+    //  empty id in constants.dart => ads disabled)
+    _createBannerAd();
+
+  }
+
+  /// Create and load the banner ad (google_mobile_ads 6.x API)
+  void _createBannerAd() {
+    if (ANDROID_BANNER_ID.isEmpty) {
+      print('BannerAd disabled (empty ad unit id)');
+      return;
+    }
+
+    _bannerAd = BannerAd(
+      adUnitId: ANDROID_BANNER_ID,
+      size: AdSize.banner,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (Ad ad) async {
           print('$BannerAd loaded.');
-          await Future.delayed(Duration(milliseconds: 2000));
-          isBannerVisible = true;
-          setState(() {});
+          await Future.delayed(const Duration(milliseconds: 2000));
+          if (mounted) {
+            isBannerVisible = true;
+            setState(() {});
+          }
         },
         onAdFailedToLoad: (Ad ad, LoadAdError error) {
           print('$BannerAd failedToLoad: $error');
@@ -61,17 +76,16 @@ class _MatchesTabState extends State<MatchesTab> {
       ),
     );
 
-    _bannerAd.load();
+    _bannerAd!.load();
     //Google Banner Ads
 
   }
 
   @override
   void dispose() {
-    // TODO: implement dispose
     super.dispose();
 
-    _bannerAd.dispose();
+    _bannerAd?.dispose();
   }
 
   @override
@@ -79,28 +93,32 @@ class _MatchesTabState extends State<MatchesTab> {
     /// Initialization
     _i18n = AppLocalizations.of(context);
 
-    //Banner Ads widget
-    final AdWidget adWidget = AdWidget(ad: _bannerAd);
+    //Banner Ads widget - built only when the ad exists
+    final Widget? bannerAdWidget = (_bannerAd != null)
+        ? SizedBox(
+            width: _bannerAd!.size.width.toDouble(),
+            height: _bannerAd!.size.height.toDouble(),
+            child: AdWidget(ad: _bannerAd!))
+        : null;
 
     return Column(
       children: [
 
         /// Banner Ad
-        Visibility(
-          visible: isBannerVisible,
-          child: Align(
-            alignment: FractionalOffset.topCenter,
-            child: Padding(
-                padding: EdgeInsets.all(12),
-                child: Container(
-                  alignment: Alignment.center,
-                  child: adWidget,
-                  width: _bannerAd.size.width.toDouble(),
-                  height: _bannerAd.size.height.toDouble(),
-                )
+        if (bannerAdWidget != null)
+          Visibility(
+            visible: isBannerVisible,
+            child: Align(
+              alignment: FractionalOffset.topCenter,
+              child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Container(
+                    alignment: Alignment.center,
+                    child: bannerAdWidget,
+                  )
+              ),
             ),
           ),
-        ),
 
 
         /// Header
@@ -143,7 +161,7 @@ class _MatchesTabState extends State<MatchesTab> {
                 if (!snapshot.hasData) return LoadingCard();
 
                 /// Get user object
-                final User user = User.fromDocument(snapshot.data!.data()!);
+                final User user = User.fromDocument(snapshot.data!.data()! as Map<String, dynamic>);
 
                 /// Show user card
                 return GestureDetector(
@@ -178,10 +196,10 @@ class _MatchesTabState extends State<MatchesTab> {
       Map<String , dynamic> currentUserTypings = snapshot.data()![USER_TYPING];
 
 
-      DocumentSnapshot otherUser = await FirebaseFirestore.instance.collection(C_USERS).doc(user.userId).get();
+      final otherUser = await FirebaseFirestore.instance.collection(C_USERS).doc(user.userId).get();
 
-      Map<String , dynamic> otherUserData = otherUser.data()!;
-      Map<String , dynamic> otherUserTypings = otherUser.data()![USER_TYPING];
+      Map<String , dynamic> otherUserData = otherUser.data()! as Map<String, dynamic>;
+      Map<String , dynamic> otherUserTypings = otherUserData[USER_TYPING];
 
 
 

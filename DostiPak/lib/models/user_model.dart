@@ -10,9 +10,8 @@ import 'package:rishtpak/helpers/app_helper.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:geoflutterfire/geoflutterfire.dart';
-import 'package:place_picker/entities/location_result.dart';
-import 'package:place_picker/place_picker.dart';
+import 'package:rishtpak/datas/passport_location.dart';
+import 'package:rishtpak/helpers/geo_helper.dart';
 import 'package:scoped_model/scoped_model.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:rishtpak/constants/constants.dart';
@@ -26,9 +25,6 @@ class UserModel extends Model {
   final _storageRef = FirebaseStorage.instance;
   final _fcm = FirebaseMessaging.instance;
   final _appHelper = AppHelper();
-
-  /// Initialize geoflutterfire instance
-  final _geo = new Geoflutterfire();
 
   /// Other variables
   ///
@@ -63,7 +59,7 @@ class UserModel extends Model {
     final DocumentSnapshot userDoc = await UserModel().getUser(userId);
 
     /// return user object
-    return User.fromDocument(userDoc.data()!);
+    return User.fromDocument(userDoc.data()! as Map<String, dynamic>);
   }
 
   /// Get user from database to listen changes => stream of [DocumentSnapshot]
@@ -108,6 +104,39 @@ class UserModel extends Model {
   void setUserVip() {
     this.userIsVip = true;
     notifyListeners();
+  }
+
+  /// Refresh the VIP status of the current user
+  /// by reading the [USER_VIP_UNTIL] field from database.
+  ///
+  /// VIP is active while `user_vip_until` is in the future
+  /// (the field is extended by the PaymentsService on a successful
+  /// Razorpay VIP purchase).
+  Future<void> refreshVipStatus() async {
+    try {
+      final DocumentSnapshot userDoc = await getUser(getFirebaseUser!.uid);
+      if (!userDoc.exists) return;
+
+      final Map<String, dynamic> data =
+          userDoc.data()! as Map<String, dynamic>;
+      final dynamic vipUntilRaw = data[USER_VIP_UNTIL];
+
+      DateTime? vipUntil;
+      if (vipUntilRaw is Timestamp) {
+        vipUntil = vipUntilRaw.toDate();
+      } else if (vipUntilRaw is String && vipUntilRaw.isNotEmpty) {
+        vipUntil = DateTime.tryParse(vipUntilRaw);
+      }
+
+      final bool isVip = vipUntil != null && vipUntil.isAfter(DateTime.now());
+      if (this.userIsVip != isVip) {
+        this.userIsVip = isVip;
+        notifyListeners();
+      }
+      debugPrint('refreshVipStatus() -> userIsVip: $isVip');
+    } catch (e) {
+      debugPrint('refreshVipStatus() -> error: $e');
+    }
   }
 
   /// Set Active VIP Subscription ID
@@ -171,7 +200,7 @@ class UserModel extends Model {
           }
           else {
             // Update UserModel for current user
-            updateUserObject(userDoc.data()!);
+            updateUserObject(userDoc.data()! as Map<String, dynamic>);
             // Update user device token and subscribe to fcm topic
             updateUserDeviceToken();
             // Go to home screen
@@ -312,21 +341,21 @@ class UserModel extends Model {
 
       ///
       /// Get User current location using GPS
-    final Position position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high);
+    final Position position = await Geolocator.getCurrentPosition();
 
       /// Get User location from formatted address
       final Placemark place =
           await _appHelper.getUserAddress(position.latitude, position.longitude);
       // Get User Country, City or Locality
       country = place.country ?? '';
-      locality = place.locality != '' // Check value
+      locality = place.locality != null && place.locality != '' // Check value
           ? place.locality.toString()
-          : place.administrativeArea ?? '';
+          : (place.administrativeArea ?? '');
 
       /// Set Geolocation point
-      final GeoFirePoint geoPoint = _geo.point(
-          latitude: position.latitude, longitude: position.longitude);
+      /// (geoflutterfire compatible data: geohash + geopoint)
+      final Map<String, dynamic> geoPoint = GeoHelper.buildGeoPointData(
+          position.latitude, position.longitude);
 
     /// Get user device token for push notifications
     final userDeviceToken = await _fcm.getToken();
@@ -362,7 +391,7 @@ class UserModel extends Model {
       USER_STATUS: 'active',
       USER_LEVEL: 'user',
       // User location info
-      USER_GEO_POINT: geoPoint.data,
+      USER_GEO_POINT: geoPoint,
       USER_COUNTRY: country,
       USER_LOCALITY: locality,
       // End
@@ -381,7 +410,7 @@ class UserModel extends Model {
       final DocumentSnapshot userDoc = await getUser(getFirebaseUser!.uid);
 
       /// Update UserModel for current user
-      updateUserObject(userDoc.data()!);
+      updateUserObject(userDoc.data()! as Map<String, dynamic>);
 
       /// Update loading status
       isLoading = false;
@@ -443,7 +472,7 @@ class UserModel extends Model {
   /// Update User location info
   Future<void> updateUserLocation({
     required bool isPassport,
-    LocationResult? locationResult,
+    PassportLocation? passportLocation,
     // Callback functions
     required VoidCallback onSuccess,
     required VoidCallback onFail,
@@ -452,15 +481,14 @@ class UserModel extends Model {
     String country = '';
     String locality = '';
 
-    GeoFirePoint geoPoint;
+    Map<String, dynamic> geoPoint;
 
     // Check the passport param
     if (!isPassport) {
       /// Update user location: Country, City and Geo Data
       ///
       /// Get user current location using GPS
-      final Position position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high);
+      final Position position = await Geolocator.getCurrentPosition();
 
       /// Get User location from formatted address
       final Placemark place = await _appHelper.getUserAddress(
@@ -468,43 +496,34 @@ class UserModel extends Model {
       // Set values
       country = place.country ?? '';
       // Check
-      if (place.locality != '') {
+      if (place.locality != null && place.locality != '') {
         locality = place.locality.toString();
       } else {
-        locality = place.subAdministrativeArea.toString();
+        locality = (place.subAdministrativeArea ?? '').toString();
       }
 
       /// Set Geolocation point
-      geoPoint = _geo.point(
-          latitude: position.latitude, longitude: position.longitude);
+      /// (geoflutterfire compatible data: geohash + geopoint)
+      geoPoint = GeoHelper.buildGeoPointData(
+          position.latitude, position.longitude);
     } else {
-      // Get location data from passort feature
-      //country = locationResult.country.name ?? '';
-      // Check country result
-      if (locationResult!.country!.name != null) {
-        country = locationResult.country!.name.toString();
-      }
+      // Get location data from passport feature (on-device geocoding)
+      final PassportLocation location = passportLocation!;
 
-      // Check locality result
-      if (locationResult.city!.name != null) {
-        locality = locationResult.city!.name.toString();
-      } else {
-        locality = locationResult.locality.toString();
-      }
-
-      // Get Latitute & Longitude from passort feature
-      LatLng latAndlong = locationResult.latLng!;
+      // Set country and locality
+      country = location.country;
+      locality = location.locality;
 
       // Get information from passport feature
-      geoPoint = _geo.point(
-          latitude: latAndlong.latitude, longitude: latAndlong.longitude);
+      geoPoint = GeoHelper.buildGeoPointData(
+          location.latitude, location.longitude);
     }
 
     /// Check place result before updating user info
     if (country != '') {
       // Update user location
       await UserModel().updateUserData(userId: UserModel().user.userId, data: {
-        USER_GEO_POINT: geoPoint.data,
+        USER_GEO_POINT: geoPoint,
         USER_COUNTRY: country,
         USER_LOCALITY: locality
       });

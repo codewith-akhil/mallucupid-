@@ -44,8 +44,12 @@ class _DiscoverTabState extends State<DiscoverTab> {
   int indexDisliked = 0;
 
 
-  late BannerAd _bannerAd;
+  // google_mobile_ads 6.x banner (null => ads disabled / not loaded)
+  BannerAd? _bannerAd;
   bool isBannerVisible = false;
+
+  // Show the swipe toast only on first visit to this tab
+  bool isFirstTime = true;
 
 
   ///New
@@ -107,17 +111,30 @@ class _DiscoverTabState extends State<DiscoverTab> {
 
 
     //Google Ads
-    _bannerAd = BannerAd(
-      adUnitId: '......................',  // BannerAd.testAdUnitId,
-      size: AdSize.banner,
-      request: AdRequest(),
-      listener: AdListener(
-        onAdLoaded: (Ad ad) async{
+    // (created only when the banner ad unit id is configured -
+    //  empty id in constants.dart => ads disabled)
+    _createBannerAd();
+  }
 
+  /// Create and load the banner ad (google_mobile_ads 6.x API)
+  void _createBannerAd() {
+    if (ANDROID_BANNER_ID.isEmpty) {
+      print('BannerAd disabled (empty ad unit id)');
+      return;
+    }
+
+    _bannerAd = BannerAd(
+      adUnitId: ANDROID_BANNER_ID,
+      size: AdSize.banner,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (Ad ad) async {
           print('$BannerAd loaded.');
-          await Future.delayed(Duration(milliseconds: 2000));
-          isBannerVisible = true;
-          setState(() {});
+          await Future.delayed(const Duration(milliseconds: 2000));
+          if (mounted) {
+            isBannerVisible = true;
+            setState(() {});
+          }
         },
         onAdFailedToLoad: (Ad ad, LoadAdError error) {
           print('$BannerAd failedToLoad: $error');
@@ -128,20 +145,15 @@ class _DiscoverTabState extends State<DiscoverTab> {
       ),
     );
 
-    _bannerAd.load();
+    _bannerAd!.load();
     //Google Ads
-
-
-
-
   }
 
   @override
   void dispose() {
-    // TODO: implement dispose
     super.dispose();
 
-    _bannerAd.dispose();
+    _bannerAd?.dispose();
   }
 
   @override
@@ -168,8 +180,8 @@ class _DiscoverTabState extends State<DiscoverTab> {
 
       //Show toast left and right swipe
       if(isFirstTime){
-        _scaffoldKey.currentState!.showSnackBar(
-            SnackBar(content: Text(_i18n.translate("swipe_left_right_toast_message"),style: TextStyle(color: Colors.white),) ,
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(_i18n.translate("swipe_left_right_toast_message"),style: const TextStyle(color: Colors.white),) ,
               backgroundColor: Theme.of(context).primaryColor,)
         );
         isFirstTime = false;
@@ -178,35 +190,39 @@ class _DiscoverTabState extends State<DiscoverTab> {
 
 
       //NEW
-      selectUser =  User.fromDocument(_users![_users!.length - 1].data()!);
+      selectUser =  User.fromDocument(_users![_users!.length - 1].data()! as Map<String, dynamic>);
       print('check it user: ${selectUser.userId}');
       //New
 
 
 
 
-      //Banner Ads widget
-      final AdWidget adWidget = AdWidget(ad: _bannerAd);
+      //Banner Ads widget - built only when the ad exists
+      final Widget? bannerAdWidget = (_bannerAd != null)
+          ? SizedBox(
+              width: _bannerAd!.size.width.toDouble(),
+              height: _bannerAd!.size.height.toDouble(),
+              child: AdWidget(ad: _bannerAd!))
+          : null;
 
       return Column(
         children: [
 
           /// Banner Ad
-          Visibility(
-            visible: isBannerVisible,
-            child: Align(
-              alignment: FractionalOffset.topCenter,
-              child: Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Container(
-                    alignment: Alignment.center,
-                    child: adWidget,
-                    width: _bannerAd.size.width.toDouble(),
-                    height: _bannerAd.size.height.toDouble(),
-                  )
+          if (bannerAdWidget != null)
+            Visibility(
+              visible: isBannerVisible,
+              child: Align(
+                alignment: FractionalOffset.topCenter,
+                child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Container(
+                      alignment: Alignment.center,
+                      child: bannerAdWidget,
+                    )
+                ),
               ),
             ),
-          ),
           /// Banner Ad
 
           Expanded(
@@ -220,7 +236,7 @@ class _DiscoverTabState extends State<DiscoverTab> {
 
                       // Get User object
                       print('1-chec my user: ${userDoc.data()!}');
-                      final User user = User.fromDocument(userDoc.data()!);
+                      final User user = User.fromDocument(userDoc.data()! as Map<String, dynamic>);
 
 
 
@@ -231,7 +247,7 @@ class _DiscoverTabState extends State<DiscoverTab> {
                       //Check if user liked or not
                       bool isLiked = false;
                       if(_likedProfiles!.length > 0)
-                        isLiked = checkUserLiked(userDoc.data()!);
+                        isLiked = checkUserLiked(userDoc.data()! as Map<String, dynamic>);
 
 
 
@@ -251,7 +267,7 @@ class _DiscoverTabState extends State<DiscoverTab> {
                       //Check if user liked or not
                       bool isDisLiked = false;
                       if(_dislikedUsers!.length > 0)
-                        isDisLiked = checkUserDisLiked(userDoc.data()!);
+                        isDisLiked = checkUserDisLiked(userDoc.data()! as Map<String, dynamic>);
 
 
                       // if(isDisLiked)
@@ -355,12 +371,12 @@ class _DiscoverTabState extends State<DiscoverTab> {
                           //NEW
                           int selectIndex = index - 1;
                           if(selectIndex < 0){
-                            selectUser =  User.fromDocument(_users![_users!.length - 1].data()!);
+                            selectUser =  User.fromDocument(_users![_users!.length - 1].data()! as Map<String, dynamic>);
                             selectIndex = _users!.length;
                             print('check index: ${selectIndex}');
                           }
                           else {
-                            selectUser =  User.fromDocument(_users![selectIndex].data()!);
+                            selectUser =  User.fromDocument(_users![selectIndex].data()! as Map<String, dynamic>);
                             print('check index: ${selectIndex}');
                           }
                           //New
@@ -378,12 +394,12 @@ class _DiscoverTabState extends State<DiscoverTab> {
                           //NEW
                           int selectIndex = index - 1;
                           if(selectIndex < 0){
-                            selectUser =  User.fromDocument(_users![_users!.length - 1].data()!);
+                            selectUser =  User.fromDocument(_users![_users!.length - 1].data()! as Map<String, dynamic>);
                             selectIndex = _users!.length;
                             print('check index: ${selectIndex}');
                           }
                           else {
-                            selectUser =  User.fromDocument(_users![selectIndex].data()!);
+                            selectUser =  User.fromDocument(_users![selectIndex].data()! as Map<String, dynamic>);
                             print('check index: ${selectIndex}');
                           }
                           //New
@@ -484,7 +500,7 @@ class _DiscoverTabState extends State<DiscoverTab> {
               /// Check card valid index
               if (cardIndex != -1) {
                 /// Get User object
-                final User user = User.fromDocument(_users![cardIndex].data()!);
+                final User user = User.fromDocument(_users![cardIndex].data()! as Map<String, dynamic>);
 
                 /// Go to profile screen
                 Navigator.of(context).push(MaterialPageRoute(
@@ -547,7 +563,7 @@ class _DiscoverTabState extends State<DiscoverTab> {
         builder: (context) {
           return ItsMatchDialog(
             swipeKey: _swipeKey,
-            matchedUser: User.fromDocument(clickedUserDoc.data()!),
+            matchedUser: User.fromDocument(clickedUserDoc.data()! as Map<String, dynamic>),
           );
         });
 
@@ -582,10 +598,10 @@ class _DiscoverTabState extends State<DiscoverTab> {
       print('check currentUserTypings : ${currentUserTypings}');
 
 
-      DocumentSnapshot otherUser = await FirebaseFirestore.instance.collection(C_USERS).doc(user.userId).get();
+      final otherUser = await FirebaseFirestore.instance.collection(C_USERS).doc(user.userId).get();
 
-      Map<String , dynamic> otherUserData = otherUser.data()!;
-      Map<String , dynamic> otherUserTypings = otherUser.data()![USER_TYPING];
+      Map<String , dynamic> otherUserData = otherUser.data()! as Map<String, dynamic>;
+      Map<String , dynamic> otherUserTypings = otherUserData[USER_TYPING];
       print('check otherUserTypings : ${otherUserTypings}');
 
 
@@ -641,7 +657,7 @@ class _DiscoverTabState extends State<DiscoverTab> {
 
     for(int i = 0; i < _likedProfiles!.length ; i++){
 
-      Map<String,dynamic>  likedUser = _likedProfiles![i].data()!;
+      Map<String,dynamic>  likedUser = _likedProfiles![i].data()! as Map<String, dynamic>;
 
       if(user[USER_ID] == likedUser[LIKED_USER_ID])
         return true;
@@ -658,7 +674,7 @@ class _DiscoverTabState extends State<DiscoverTab> {
 
     for(int i = 0; i < _dislikedUsers!.length ; i++){
 
-      Map<String,dynamic>  disLikedUser = _dislikedUsers![i].data()!;
+      Map<String,dynamic>  disLikedUser = _dislikedUsers![i].data()! as Map<String, dynamic>;
 
       if(user[USER_ID] == disLikedUser[DISLIKED_USER_ID])
         return true;

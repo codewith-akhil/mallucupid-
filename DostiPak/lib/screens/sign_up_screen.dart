@@ -13,7 +13,6 @@ import 'package:rishtpak/widgets/svg_icon.dart';
 import 'package:rishtpak/widgets/terms_of_service_row.dart';
 import 'package:flutter/material.dart';
 import 'package:rishtpak/widgets/default_button.dart';
-import 'package:flutter_cupertino_datetime_picker/flutter_cupertino_datetime_picker.dart';
 import 'package:scoped_model/scoped_model.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -83,55 +82,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
     });
   }
 
-  // Get Date time picker app locale
-  DateTimePickerLocale _getDatePickerLocale() {
-    // Inicial value
-    DateTimePickerLocale _locale = DateTimePickerLocale.en_us;
-
-    // Handle your Supported Languages here
-    SUPPORTED_LOCALES.forEach((Locale locale) {
-      switch (locale.languageCode) {
-        case 'en': // English
-          _locale = DateTimePickerLocale.en_us;
-          break;
-        case 'es': // Spanish
-          _locale = DateTimePickerLocale.es;
-          break;
-      }
-    });
-
-    return _locale;
-  }
-
-  /// Display date picker.
-  void _showDatePicker() {
-    DatePicker.showDatePicker(
-      context,
-      onMonthChangeStartWithFirstDate: true,
-      pickerTheme: DateTimePickerTheme(
-        showTitle: true,
-        confirm: Text(_i18n.translate('DONE'),
-            style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18.0,
-                color: Theme.of(context).primaryColor)),
-      ),
-      minDateTime: DateTime(1920, 1, 1),
-      maxDateTime: DateTime.now(),
-      initialDateTime: _initialDateTime,
-      dateFormat: 'yyyy-MMMM-dd', // Date format
-      locale: _getDatePickerLocale(), // Set your App Locale here
-      onClose: () => print("----- onClose -----"),
-      onCancel: () => print('onCancel'),
-      onChange: (dateTime, List<int> index) {
-        // Get birthday info
-        _updateUserBithdayInfo(dateTime);
-      },
-      onConfirm: (dateTime, List<int> index) {
-        // Get birthday info
-        _updateUserBithdayInfo(dateTime);
-      },
+  // Display the built-in Material date picker.
+  Future<void> _showDatePicker() async {
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _initialDateTime,
+      firstDate: DateTime(1920),
+      lastDate: DateTime.now(),
     );
+
+    // Check picked date
+    if (pickedDate != null) {
+      // Get birthday info
+      _updateUserBithdayInfo(pickedDate);
+    }
   }
 
   @override

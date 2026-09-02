@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart' hide Badge;
 import 'package:rishtpak/api/notifications_api.dart';
 import 'package:rishtpak/constants/constants.dart';
 import 'package:rishtpak/dialogs/common_dialogs.dart';
@@ -9,7 +10,6 @@ import 'package:rishtpak/widgets/badge.dart';
 import 'package:rishtpak/widgets/no_data.dart';
 import 'package:rishtpak/widgets/processing.dart';
 import 'package:rishtpak/widgets/svg_icon.dart';
-import 'package:flutter/material.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 class NotificationsScreen extends StatelessWidget {
@@ -108,9 +108,9 @@ class NotificationsScreen extends StatelessWidget {
 
                         /// Handle notification click
                         _appNotifications.onNotificationClick(context,
-                            nType: notification.data()?[N_TYPE] ?? '',
-                            nSenderId: notification.data()?[N_SENDER_ID] ?? '',
-                            nMessage: notification.data()?[N_MESSAGE] ?? '');
+                            nType: (notification.data() as Map<String, dynamic>?)?[N_TYPE] ?? '',
+                            nSenderId: (notification.data() as Map<String, dynamic>?)?[N_SENDER_ID] ?? '',
+                            nMessage: (notification.data() as Map<String, dynamic>?)?[N_MESSAGE] ?? '');
                       },
                     ),
                   );

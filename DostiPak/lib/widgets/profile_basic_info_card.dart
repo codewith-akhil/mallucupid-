@@ -134,7 +134,7 @@ class ProfileBasicInfoCard extends StatelessWidget {
                         }),
                   ),
                   cicleButton(
-                    bgColor: Theme.of(context).accentColor,
+                    bgColor: Theme.of(context).colorScheme.secondary,
                     padding: 13,
                     icon: SvgIcon("assets/icons/settings_icon.svg",
                         color: Colors.white, width: 30, height: 30),

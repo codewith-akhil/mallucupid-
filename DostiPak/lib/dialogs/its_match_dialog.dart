@@ -160,10 +160,10 @@ class _ItsMatchDialogState extends State<ItsMatchDialog> {
       Map<String , dynamic> currentUserTypings = snapshot.data()![USER_TYPING];
 
 
-      DocumentSnapshot otherUser = await FirebaseFirestore.instance.collection(C_USERS).doc(user.userId).get();
+      final otherUser = await FirebaseFirestore.instance.collection(C_USERS).doc(user.userId).get();
 
-      Map<String , dynamic> otherUserData = otherUser.data()!;
-      Map<String , dynamic> otherUserTypings = otherUser.data()![USER_TYPING];
+      Map<String , dynamic> otherUserData = otherUser.data()! as Map<String, dynamic>;
+      Map<String , dynamic> otherUserTypings = otherUserData[USER_TYPING];
 
 
 

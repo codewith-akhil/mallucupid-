@@ -1,38 +1,22 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rishtpak/helpers/app_localizations.dart';
 import 'package:rishtpak/widgets/svg_icon.dart';
 
 class ImageSourceSheet extends StatelessWidget {
   // Constructor
-  ImageSourceSheet({required this.onImageSelected});
+  const ImageSourceSheet({required this.onImageSelected, super.key});
 
   // Callback function to return image file
   final Function(File?) onImageSelected;
-  // ImagePicker instance
-  final picker = ImagePicker();
+  // ImagePicker instance (static so the class can keep its const constructor)
+  static final ImagePicker picker = ImagePicker();
 
   Future<void> selectedImage(BuildContext context, File? image) async {
-    // init i18n
-    final i18n = AppLocalizations.of(context);
-
-    // Check file
-    if (image != null) {
-      final croppedImage = await ImageCropper.cropImage(
-          sourcePath: image.path,
-          aspectRatioPresets: [CropAspectRatioPreset.square],
-          maxWidth: 400,
-          maxHeight: 400,
-          androidUiSettings: AndroidUiSettings(
-            toolbarTitle: i18n.translate("edit_crop_image"),
-            toolbarColor: Theme.of(context).primaryColor,
-            toolbarWidgetColor: Colors.white,
-          ));
-      onImageSelected(croppedImage);
-    }
+    // image_cropper removed: the picked image is returned uncropped
+    onImageSelected(image);
   }
 
   @override
@@ -56,7 +40,6 @@ class ImageSourceSheet extends StatelessWidget {
             ),
 
             SizedBox(height: 15,),
-
 
 
             Text(i18n.translate("media") , style: TextStyle(color: Theme.of(context).primaryColor , fontSize: 24),),
@@ -83,13 +66,17 @@ class ImageSourceSheet extends StatelessWidget {
                     icon: Icon(Icons.photo_size_select_actual_outlined, color: Colors.white, size: 28),
                     label: Text(i18n.translate("gallery"), style: TextStyle(fontSize: 20 , color: Colors.white)),
                     style: ElevatedButton.styleFrom(
-                        primary: Theme.of(context).primaryColor,
+                        backgroundColor: Theme.of(context).primaryColor,
+                        foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(400))
                     ),
                     onPressed: () async {
 
                       // Get image from device gallery
-                      final pickedFile = await picker.getImage(source: ImageSource.gallery,);
+                      final XFile? pickedFile = await picker.pickImage(
+                        source: ImageSource.gallery,
+                        imageQuality: 80,
+                      );
 
                       if (pickedFile == null) return;
                       selectedImage(context, File(pickedFile.path));
@@ -106,12 +93,13 @@ class ImageSourceSheet extends StatelessWidget {
                     style: OutlinedButton.styleFrom(
                       backgroundColor: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(400)),
-                      primary: Theme.of(context).primaryColor,
+                      foregroundColor: Theme.of(context).primaryColor,
                     ),
                     onPressed: () async {
                       // Capture image from camera
-                      final pickedFile = await picker.getImage(
+                      final XFile? pickedFile = await picker.pickImage(
                         source: ImageSource.camera,
+                        imageQuality: 80,
                       );
                       if (pickedFile == null) return;
                       selectedImage(context, File(pickedFile.path));
@@ -124,40 +112,3 @@ class ImageSourceSheet extends StatelessWidget {
         )));
   }
 }
-
-
-
-//Column(
-//               mainAxisSize: MainAxisSize.min,
-//               children: <Widget>[
-//                 /// Select image from gallery
-//                 TextButton.icon(
-//                   icon: Icon(Icons.photo_library, color: Colors.grey, size: 27),
-//                   label: Text(i18n.translate("gallery"), style: TextStyle(fontSize: 16)),
-//                   onPressed: () async {
-//                     // Get image from device gallery
-//                     final pickedFile = await picker.getImage(
-//                       source: ImageSource.gallery,
-//                     );
-//                     if (pickedFile == null) return;
-//                     selectedImage(context, File(pickedFile.path));
-//                   },
-//                 ),
-//
-//                 /// Capture image from camera
-//                 TextButton.icon(
-//                   icon: SvgIcon("assets/icons/camera_icon.svg",
-//                       width: 20, height: 20),
-//                   label: Text(i18n.translate("camera"),
-//                       style: TextStyle(fontSize: 16)),
-//                   onPressed: () async {
-//                     // Capture image from camera
-//                     final pickedFile = await picker.getImage(
-//                       source: ImageSource.camera,
-//                     );
-//                     if (pickedFile == null) return;
-//                     selectedImage(context, File(pickedFile.path));
-//                   },
-//                 ),
-//               ],
-//             )
